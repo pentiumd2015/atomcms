@@ -1,0 +1,40 @@
+<?
+namespace Models;
+
+use \Helpers\CArrayHelper;
+use \Helpers\CArrayFilter;
+
+class UserGroupValue extends \DB\Manager{
+    static protected $_table    = "user_group_value";
+    static protected $_pk       = "id";
+    
+    static public function setValues($userID, $arUserGroupIDs = array()){        
+        $deleteSQL = "user_id=?";
+        
+        if(is_array($arUserGroupIDs)){
+            $arUserGroupIDs = CArrayHelper::map($arUserGroupIDs, "intval");
+            $arUserGroupIDs = CArrayFilter::filter($arUserGroupIDs);
+                
+            if(count($arUserGroupIDs)){
+                $deleteSQL.= " AND user_group_id NOT IN(" . implode(", ", $arUserGroupIDs) . ")";
+            }
+        }
+        
+        static::deleteByParams($deleteSQL, array($userID));
+        
+        $arUserGroupValues = static::findAll("user_id=?", array($userID));
+        $arUserGroupValues = CArrayHelper::index($arUserGroupValues, "user_group_id");
+
+        if(is_array($arUserGroupIDs)){
+            foreach($arUserGroupIDs AS $userGroupID){
+                if(!isset($arUserGroupValues[$userGroupID])){
+                    static::add(array(
+                        "user_id"       => $userID,
+                        "user_group_id" => $userGroupID
+                    ));
+                }
+            }
+        }
+    }
+}
+?>

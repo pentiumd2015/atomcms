@@ -1,0 +1,151 @@
+<?
+namespace Entity;
+
+use \DB\Connection;
+use \CEvent;
+use \Helpers\CArrayHelper;
+
+class ManagerBuilder extends Builder{
+    protected $obManager;
+    
+    public function getManager(){
+        return $this->obManager;
+    }
+    
+    public function setManager(Manager $obManager){
+        $this->obManager = $obManager;
+        
+        return $this;
+    }
+    
+    public function __construct(Connection $connection, Manager $obManager){
+        $this->obManager    = $obManager;
+        $this->connection   = $connection;
+    }
+        
+    public function add(array $arData){
+        $obManager = $this->getManager();
+        $obResult = new Result\AddResult;
+
+        $arFields   = array();
+        
+        foreach($obManager->getFields() AS $obField){
+            $arFields[$obField->getFieldName()] = $obField;
+        }
+        
+        $validate = $this->validateFields($arFields, $arData);
+
+        if($validate === true){
+            $arFieldValues = array();
+            
+            foreach($arFields AS $fieldName => $obField){
+                $arFieldValues[$fieldName] = $arData[$fieldName];
+            }
+            
+            $id = parent::insert($arFieldValues);
+            
+            if($id){
+                $arAddData = array($obManager->getPk() => $id) + $arData;
+                
+                $obResult->setSuccess(true);
+                $obResult->setID($id);
+                $obResult->setData($arAddData);
+                
+                $arEvents = $obManager->getEventNames();
+                
+                CEvent::trigger($arEvents["ADD"], array($id, $arAddData));
+            }else{
+                $obResult->setSuccess(false);
+                $obResult->setErrors(array("query error"));
+            }
+        }else{
+            $obResult->setSuccess(false);
+            $obResult->setErrors($validate);
+        }
+        
+        return $obResult;
+    }
+    
+    public function update(array $arData){
+        $obManager   = $this->getManager();
+        $obResult   = new Result\UpdateResult;
+        
+        if($arItems = $this->fetchAll()){
+            $pk         = $obManager->getPk();
+            $fieldPk    = ExtraField::getPk();
+            
+            $arFields       = array();
+            $arUpdateData   = array();
+            
+            foreach($obManager->getFields() AS $obField){
+                $fieldName = $obField->getFieldName();
+                
+                if(isset($arData[$fieldName])){
+                    $arFields[$fieldName] = $obField;
+                }
+            }
+            
+            $arIDs      = array();
+            $arErrors   = array();
+           
+            foreach($arItems AS $arItem){
+                $validate = $this->validateFields($arFields, array($pk => $arItem[$pk]) + $arData);
+                
+                if($validate === true){
+                    $arIDs[] = $arItem[$pk];
+                }else{
+                    $arErrors[$arItem[$pk]] = $validate;
+                }
+            }
+            
+            if(!count($arErrors)){
+                $arFieldValues = array();
+                
+                foreach($arFields AS $fieldName => $obField){
+                    $arFieldValues[$fieldName] = $arData[$fieldName];
+                }
+                
+                $numAffectedRows = parent::update($arFieldValues);
+                
+                $obResult->setSuccess(true);
+                $obResult->setID($arIDs);
+                $obResult->setNumAffectedRows($numAffectedRows);
+                $obResult->setData($arData);
+                
+                $arEvents = $obManager->getEventNames();
+                
+                CEvent::trigger($arEvents["UPDATE"], array($arIDs, $arData));
+            }else{
+                $obResult->setSuccess(false);
+                $obResult->setErrors($arErrors);
+            }
+        }
+        
+        return $obResult;
+    }
+    
+    public function delete(){
+        $obManager          = $this->getManager();
+        $obResult           = new Result\DeleteResult;
+        
+        $arIDs              = array();
+        $numAffectedRows    = 0;
+        
+        if($arItems = $this->fetchAll()){
+            $numAffectedRows    = parent::delete();
+            $pk                 = $obManager->getPk();
+            $arIDs              = CArrayHelper::getColumn($arItems, $pk);
+            $arEvents           = $obManager->getEventNames();
+            
+            CEvent::trigger($arEvents["DELETE"], array($arIDs, $arItems));
+        }
+        
+        $obResult->setID($arIDs);
+        $obResult->setNumAffectedRows($numAffectedRows);
+        $obResult->setData($arItems);
+        $obResult->setSuccess(true);
+        
+        return $obResult;
+    }
+}
+?>

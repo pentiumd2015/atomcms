@@ -1,0 +1,83 @@
+.display_list,
+.display_list_group {
+    list-style: none;
+    padding-left: 0;
+}
+
+.display_list_group > li,
+.display_list > li {
+    border: 1px #DBDBDB solid;
+    padding: 5px 10px;
+    background: #fff;
+    font-size: 14px;
+}
+
+.display_list_group > li {
+    background: #F1F1F1;
+}
+
+.display_list li + li {
+    margin-top: 3px;
+}
+
+.display_list li .drag_handle_1,
+.display_list_group li .drag_handle_2{
+    margin: 5px 0;
+    cursor: move;
+}
+
+.display_list li .display_item_title{
+    margin: 5px 0;
+}
+
+.display_list li.ui-sortable-helper{
+    background-color: #5bc0de;
+    border-color: #46b8da;
+    color: #fff;
+    cursor: move;
+}
+
+.display_list li.ui-sortable-helper .display_list_group li{
+    color: #333;
+}
+
+
+.nav-tab-panel{
+    float: right;
+    margin-left: 10px;
+}
+
+.nav-tab-panel .tab_edit i{
+    color: #333;
+}
+
+.nav-tabs .tab_drag_handle{
+    display: inline-block;
+    color: #333;
+    margin-right: 5px;
+    cursor: move;
+}
+
+.nav-tab-panel .tab_remove i{
+    color: #D65C4F;
+}
+
+.nav-tab-panel span + span{
+    margin-left: 7px;
+}
+
+.nav-tabs .tab_add i{
+    margin: 0 1px 0 0;
+}
+
+select[multiple].select_available_fields{
+    width: 100%;
+    height: 250px;
+    outline: none
+}
+
+select[multiple].select_available_fields option{
+    background: #fff;
+    vertical-align: middle;
+    padding: 7px 5px;
+}

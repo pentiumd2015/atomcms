@@ -1,0 +1,93 @@
+.view_table,
+.view_table_group{
+    width:100%;
+    border-spacing: 0 3px;
+    border: none;
+    margin: 0;
+    border-collapse: separate;
+}
+
+.view_table .table-controls{
+    text-align:right;
+}
+
+.view_table p {
+    margin: 10px 0;
+}
+
+.view_table > tbody > tr {
+    background-color: #fff;
+}
+
+.view_table > tbody > tr td {
+    border-top: 1px #DBDBDB solid;
+    border-bottom: 1px #DBDBDB solid;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+.view_table > tbody > tr td:first-child {
+    border-left: 1px #DBDBDB solid;
+}
+
+.view_table > tbody > tr td:last-child {
+    border-right: 1px #DBDBDB solid;
+}
+
+.view_table_nav {
+    width: 90px;
+}
+
+.view_table_group tr {
+    background: #F1F1F1;
+}
+
+.view_table .drag_handle_1,
+.view_table .drag_handle_2{
+    cursor:move;
+}
+
+.view_table > tbody > tr.on_drag_start, 
+.view_table_group > tbody > tr.on_drag_start {
+    background-color: #5bc0de;
+    border-color: #46b8da;
+    color:#fff;
+    cursor: move;
+}
+
+.view_table > tbody > tr.on_drag_start .view_table_group tr{
+    color: #333;
+}
+
+.nav-tab-panel{
+    float: right;
+    margin-left: 10px;
+}
+
+.nav-tab-panel .tab_edit i{
+    color: #546672;
+}
+
+.nav-tab-panel .tab_remove i{
+    color: #D65C4F;
+}
+
+.nav-tab-panel span + span{
+    margin-left: 7px;
+}
+
+.nav-tabs .tab_add i{
+    margin: 0 1px 0 0;
+}
+
+select[multiple].select_available_fields{
+    width: 100%;
+    height: 250px;
+    outline: none
+}
+
+select[multiple].select_available_fields option{
+    background: #fff;
+    vertical-align: middle;
+    padding: 7px 5px;
+}

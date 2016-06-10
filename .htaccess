@@ -1,0 +1,27 @@
+php_value mbstring.internal_encoding UTF-8
+
+php_value mbstring.func_overload 2
+
+php_value upload_max_filesize 1000M
+php_value post_max_size 1000M
+php_value memory_limit 512M
+#для отправки больших массивов постом
+php_value max_input_vars 100000 
+
+Options -Indexes
+
+Options +FollowSymlinks
+
+DirectoryIndex index.php index.html index.htm
+
+RewriteEngine On
+#RewriteBase /
+
+RewriteRule \.(jpg|jpeg|png|gif|ico|js|css)$ - [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ index.php [L,QSA]
+php_flag apc.cache_by_default Off
+AddDefaultCharset utf-8
+AddType 'text/html; charset=utf-8' .html .htm .shtml

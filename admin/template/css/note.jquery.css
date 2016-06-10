@@ -1,0 +1,76 @@
+.simple_note{
+    z-index: 9999;
+    color: #fff;
+    position: fixed;
+    right: 25px;
+    top: 20px;
+}
+
+.simple_note .simple_note_container{
+    border: none;
+    color: #fff;
+    opacity: 0.95;
+    width: 230px;
+    padding: 12px 18px;
+    margin-top: 5px;
+    text-align: left;
+    background-color: #32434d;
+    border-radius: 2px;
+}
+
+.simple_note_container.simple_note_error{
+    background-color: #D65C4F;
+}
+
+.simple_note_container.simple_note_success{
+    background-color: #65B688;
+}
+
+.simple_note_container.simple_note_warning{
+    background-color: #db765b;
+}
+
+.simple_note_container.simple_note_info{
+    background-color: #3CA2BB;  
+}
+
+.simple_note .simple_note_container .simple_note_header{
+    font-weight: 300;
+    font-size: 13px;
+    padding: 0 0 2px 0;
+}
+
+.simple_note .simple_note_container .simple_note_header:empty{
+    padding: 0;
+}
+
+.simple_note  .simple_note_container .simple_note_close{
+    opacity: 0.6;
+    z-index: 99;
+    float: right;
+    font-weight: 300;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.simple_note  .simple_note_container .simple_note_close:hover{
+    opacity: 0.8;
+}
+
+.simple_note .simple_note_closer{
+    padding: 5px 0;
+    cursor: pointer;
+    font-size: 11px;
+    margin-top: 5px;
+    font-weight: 600;
+    text-align: center;
+    background: #454545;
+    color: #ffffff;
+    width: 222px;
+}
+
+@media print{
+    .simple_note{
+        display: none;
+    }
+}

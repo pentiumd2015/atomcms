@@ -1,0 +1,33 @@
+.fields_list{
+    list-style:none;
+    min-height: 50px;
+    border: 1px solid #ddd;
+    padding: 16px;
+}
+
+.fields_list li{
+    border: 1px #DBDBDB solid;
+    padding: 10px 10px;
+    font-size: 14px;
+    background: #F1F1F1;
+    cursor:move;
+}
+
+.fields_list li.field_placeholder{
+    background: #fff;
+}
+
+.fields_list li + li{
+    margin-top:3px;
+}
+
+.fields_list li .field_drag_handle{
+    float: left;
+    margin-right: 10px;
+}
+
+.fields_list li.ui-sortable-helper{
+    background-color: #5bc0de;
+    border-color: #46b8da;
+    color: #fff;
+}

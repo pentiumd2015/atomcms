@@ -1,0 +1,699 @@
+<?
+namespace Entity;
+
+use \DB\Connection;
+use \DB\Builder AS DbBuilder;
+use \CEvent;
+use \Helpers\CArrayHelper;
+
+class EntityBuilder extends Builder{
+    protected $obEntity;
+    
+    protected $arExtraFieldIndexedByID;
+    protected $arExtraFieldIndexedByAlias;
+    protected $arExtraColumns = array();
+    protected $arCustomColumns = array();
+    
+    public function getEntity(){
+        return $this->obEntity;
+    }
+    
+    public function __construct(Connection $connection, Entity $obEntity){
+        $this->obEntity     = $obEntity;
+        $this->connection   = $connection;
+    }
+    
+    protected function loadExtraFields(){
+        if(!is_array($this->arExtraFieldIndexedByID)){
+            $fieldPk = ExtraField::getPk();
+            
+            $this->arExtraFieldIndexedByID = CArrayHelper::index($this->obEntity->getExtraFields(), $fieldPk);
+            
+            foreach($this->arExtraFieldIndexedByID AS $fieldID => &$arExtraField){
+                $fieldTypeClass = $arExtraField["type"];
+                
+                if(class_exists($fieldTypeClass)){
+                    $obFieldType = new $fieldTypeClass(ExtraField::getFieldNameById($fieldID), array(), $this->obEntity);
+                    
+                    //if(!$obFieldType->isCustomField()){
+                        $arExtraField["type"] = $obFieldType;
+                  //  }else{
+                  //      unset($this->arExtraFieldIndexedByID[$index]);
+                  //  }
+                }else{
+                    unset($this->arExtraFieldIndexedByID[$fieldID]);
+                }
+            }
+            
+            unset($arExtraField);
+            
+            $this->arExtraFieldIndexedByAlias = CArrayHelper::index($this->arExtraFieldIndexedByID, "alias");
+        }
+    }
+    
+    public function add(array $arData){
+        $obEntity = $this->getEntity();
+        $obResult = new Result\AddResult;
+        
+        $fieldPk    = ExtraField::getPk();
+        $pk         = $obEntity->getPk();
+        
+        /*main fields*/
+        $arMainFields = array();
+        
+        foreach($obEntity->getFields() AS $obField){
+            $arMainFields[$obField->getFieldName()] = $obField;
+        }
+        /*main fields*/
+        
+        /*extra fields*/
+        $arExtraFields  = array();
+        $arCustomFields = array();
+
+        foreach($obEntity->getExtraFields() AS $arField){
+            $fieldTypeClass = $arField["type"];
+            
+            if(class_exists($fieldTypeClass)){
+                $fieldName      = ExtraField::getFieldNameById($arField[$fieldPk]);
+                $obFieldType    = new $fieldTypeClass($fieldName, $arField, $obEntity);
+                
+                if($obFieldType->isCustomField()){
+                    $arCustomFields[$fieldName] = $obFieldType;
+                }else{
+                    $arExtraFields[$fieldName] = $obFieldType;
+                }
+            }
+        }
+        /*extra fields*/
+        
+        $validate = $this->validateFields($arMainFields + $arExtraFields + $arCustomFields, $arData);
+
+        if($validate === true){
+            /*add main field values*/
+            $arMainFieldValues = array();
+            
+            foreach($arMainFields AS $fieldName => $obField){
+                $arMainFieldValues[$fieldName] = $arData[$fieldName];
+            }
+            
+            $id = parent::insert($arMainFieldValues);
+            /*add main field values*/
+            
+            if($id){
+                $arAddData = array($pk => $id) + $arData;
+                
+                /*add extra field values*/
+                $arExtraFieldValues = array();
+                
+                foreach($arExtraFields AS $fieldName => $obField){
+                    $arExtraFieldValues[ExtraField::getFieldIdByName($fieldName)] = $arAddData[$fieldName];
+                }
+                
+                if(count($arExtraFieldValues)){
+                    $obEntity->setExtraFieldValues($id, $arExtraFieldValues);
+                }
+                /*add extra field values*/
+                
+                /*add custom field values*/
+                $arCustomFieldValues = array();
+                
+                foreach($arCustomFieldValues AS $fieldName => $obField){
+                    $obField->add($arAddData[$fieldName], $pk, $arAddData);
+                }
+                /*add custom field values*/
+                
+                $obResult->setSuccess(true);
+                $obResult->setID($id);
+                $obResult->setData($arAddData);
+                
+                $arEvents = $obEntity->getEventNames();
+                
+                CEvent::trigger($arEvents["ADD"], array($id, $arAddData));
+            }else{
+                $obResult->setSuccess(false);
+                $obResult->setErrors(array("query error"));
+            }
+        }else{
+            $obResult->setSuccess(false);
+            $obResult->setErrors($validate);
+        }
+        
+        return $obResult;
+    }
+    
+    public function update(array $arData){
+        $obEntity   = $this->getEntity();
+        $obResult   = new Result\UpdateResult;
+        
+        if($arItems = $this->fetchAll()){
+            $pk         = $obEntity->getPk();
+            $fieldPk    = ExtraField::getPk();
+            
+            /*main fields*/
+            $arMainFields = array();
+        
+            foreach($obEntity->getFields() AS $obField){
+                $fieldName = $obField->getFieldName();
+                
+                if(isset($arData[$fieldName])){
+                    $arMainFields[$fieldName] = $obField;
+                }
+            }
+            /*main fields*/
+            
+            /*extra fields*/
+            $arExtraFields  = array();
+            $arCustomFields = array();
+            
+            $arExtraFieldIDs = array();
+            
+            foreach($arData AS $fieldName => $value){
+                if(($fieldID = ExtraField::getFieldIdByName($fieldName))){
+                    $arExtraFieldIDs[] = $fieldID;
+                }
+            }
+            
+            if(count($arExtraFieldIDs)){
+                foreach($obEntity->getExtraFields($arExtraFieldIDs) AS $arField){
+                    $fieldTypeClass = $arField["type"];
+                    
+                    if(class_exists($fieldTypeClass)){
+                        $fieldName      = ExtraField::getFieldNameById($arField[$fieldPk]);
+                        $obFieldType    = new $fieldTypeClass($fieldName, $arField, $obEntity);
+                        
+                        if($obFieldType->isCustomField()){
+                            $arCustomFields[$fieldName] = $obFieldType;
+                        }else{
+                            $arExtraFields[$fieldName] = $obFieldType;
+                        }
+                    }
+                }
+            }
+            /*extra fields*/
+            
+            $arAllFields = $arMainFields + $arExtraFields + $arCustomFields;
+            
+            $arIDs = array();
+            
+            $hasErrors = false;
+           
+            foreach($arItems AS $arItem){
+                $validate = $this->validateFields($arAllFields, array($pk => $arItem[$pk]) + $arData);
+                
+                if($validate === true){
+                    $arIDs[] = $arItem[$pk];
+                }else{
+                    $hasErrors = true;
+                    break;
+                }
+            }
+            
+            if(!$hasErrors){
+                /*update main field values*/
+                $arMainFieldValues = array();
+                
+                foreach($arMainFields AS $fieldName => $obField){
+                    $arMainFieldValues[$fieldName] = $arData[$fieldName];
+                }
+                /*update main field values*/
+                   
+                $numAffectedRows = parent::update($arMainFieldValues);
+
+                /*update extra field values*/
+                $arExtraFieldValues = array();
+                
+                foreach($arExtraFields AS $fieldName => $obField){
+                    $arExtraFieldValues[ExtraField::getFieldIdByName($fieldName)] = $arData[$fieldName];
+                }
+                
+                if(count($arExtraFieldValues)){
+                    $obEntity->setExtraFieldValues($arIDs, $arExtraFieldValues);
+                }
+                /*update extra field values*/
+                
+                /*update custom field values*/
+                foreach($arCustomFields AS $fieldName => $obField){
+                    foreach($arIDs AS $id){
+                        $obField->update($arData[$fieldName], $pk, array($pk => $id) + $arData);
+                    }
+                }
+                /*update custom field values*/
+                
+                $obResult->setSuccess(true);
+                $obResult->setID($arIDs);
+                $obResult->setNumAffectedRows($numAffectedRows);
+                $obResult->setData($arData);
+                
+                $arEvents = $obEntity->getEventNames();
+                
+                CEvent::trigger($arEvents["UPDATE"], array($arIDs, $arData));
+            }else{
+                $obResult->setSuccess(false);
+                $obResult->setErrors($validate);
+            }
+        }
+        
+        return $obResult;
+    }
+    
+    public function delete(){
+        $obEntity           = $this->getEntity();
+        $obResult           = new Result\DeleteResult;
+        $arIDs              = array();
+        $numAffectedRows    = 0;
+        
+        if($arItems = $this->fetchAll()){
+            $pk     = $obEntity->getPk();
+            $arIDs  = CArrayHelper::getColumn($arItems, $pk);
+                                    
+            //we need delete all extra field values
+            $obBuilder = new DbBuilder($this->connection);
+            $obBuilder->from($obEntity::FIELD_VALUE_TABLE)
+                      ->whereIn("item_id", $arIDs)
+                      ->delete();
+            
+            $numAffectedRows = parent::delete();
+            
+            $arEvents = $obEntity->getEventNames();
+            
+            CEvent::trigger($arEvents["DELETE"], array($arIDs, $arItems));
+        }
+        
+        $obResult->setID($arIDs);
+        $obResult->setNumAffectedRows($numAffectedRows);
+        $obResult->setData($arItems);
+        $obResult->setSuccess(true);
+        
+        return $obResult;
+    }
+    
+    public function orderBy($column, $direction = "ASC"){
+        $method = __FUNCTION__;
+        $obEntity = $this->getEntity();
+        if(is_string($column) && ($fieldName = ExtraField::getFieldAliasByName($column))){
+            if($arExtraField = $this->getExtraField($fieldName)){
+                $tableAlias = "order_" . $column;
+
+                $this->leftJoin($obEntity::FIELD_VALUE_TABLE . " AS " . $tableAlias, function($obJoin) use($obEntity, $arExtraField, $tableAlias){
+                    $obJoin->on($tableAlias . ".item_id", "=", $obEntity->getTableName() . "." . $obEntity->getPk())
+                           ->where($tableAlias . ".extra_field_id", $arExtraField[ExtraField::getPk()]);
+                })
+                ->groupBy(array($obEntity->getTableName() . "." . $obEntity->getPk()))
+                ->$method($tableAlias . "." . $arExtraField["type"]->getColumnForValue(), $direction);
+            }
+        }else{
+            parent::$method($column, $direction);
+        }
+        
+		return $this;
+	}
+    
+    public function groupBy($arGroups){
+        $method = __FUNCTION__;
+        $arGroups = is_array($arGroups) ? $arGroups : func_get_args() ;
+        
+        $obEntity = $this->getEntity();
+        
+        foreach($arGroups AS $index => $column){
+            if(is_string($column) && ($fieldName = ExtraField::getFieldAliasByName($column))){
+                if($arExtraField = $this->getExtraField($fieldName)){
+                     $tableAlias = "group_" . $column;
+                     
+                     $this->leftJoin($obEntity::FIELD_VALUE_TABLE . " AS " . $tableAlias, function($obJoin) use($obEntity, $arExtraField, $tableAlias){
+                        $obJoin->on($tableAlias . ".item_id", "=", $obEntity->getTableName() . "." . $obEntity->getPk())
+                               ->where($tableAlias . ".extra_field_id", $arExtraField[ExtraField::getPk()]);
+                    })
+                    ->$method($tableAlias . "." . $arExtraField["type"]->getColumnForValue());
+                }
+                
+                unset($arGroups[$index]);
+            }
+        }
+
+        parent::$method($arGroups);
+        
+		return $this;
+	}
+    
+    protected function getExtraField($fieldName){
+        $this->loadExtraFields();
+        
+        if(!is_numeric($fieldName)){
+            $fieldID = $this->arExtraFieldIndexedByAlias[$fieldName][ExtraField::getPk()];
+        }else{
+            $fieldID = $fieldName;
+        }
+        
+        return $this->arExtraFieldIndexedByID[$fieldID];
+    }
+    
+    protected function whereNested($callback, $logic = "AND"){
+        $type = "nested";
+        $builder = new self($this->connection, $this->getEntity());
+		$builder->from($this->from);
+        
+		$callback($builder);
+        
+        if(count($builder->arWheres)){
+			$this->arWheres[] = compact("type", "builder", "logic");
+            
+			$this->mergeParams($builder);
+		}
+        
+        return $this;
+    }
+    
+    protected function whereSub($column, $callback, $operator = NULL, $logic = "AND"){
+        $obEntity = $this->getEntity();
+        if(is_string($column) && ($fieldName = ExtraField::getFieldAliasByName($column))){
+            if($arExtraField = $this->getExtraField($fieldName)){
+                $this->whereIn($obEntity->getTableName() . "." . $obEntity->getPk(), function($obBuilder) use($obEntity, $arExtraField, $operator, $callback, $logic){
+                    $obBuilder->select($obEntity::FIELD_VALUE_TABLE . ".item_id")
+                              ->from($obEntity::FIELD_VALUE_TABLE)
+                              ->where($obEntity::FIELD_VALUE_TABLE . ".extra_field_id", $arExtraField[ExtraField::getPk()])
+                              ->where($obEntity::FIELD_VALUE_TABLE . "." . $arExtraField["type"]->getColumnForValue(), $operator, $callback, $logic);
+                }, $logic);
+            }
+        }else{
+            $type = "subquery";
+            $builder = new self($this->connection, $obEntity);
+     
+    		$callback($builder);
+            
+    		$this->arWheres[] = compact("type", "column", "operator", "builder", "logic");
+            
+            $this->mergeParams($builder);
+        }
+        
+		return $this;
+    }
+    
+    protected function whereInSub($column, $callback, $logic = "AND", $not = false){
+        $obEntity = $this->getEntity();
+        
+        if(is_string($column) && ($fieldName = ExtraField::getFieldAliasByName($column))){
+            if($arExtraField = $this->getExtraField($fieldName)){
+                $this->whereIn($obEntity->getTableName() . "." . $obEntity->getPk(), function($obBuilder) use($obEntity, $arExtraField, $operator, $callback, $logic){
+                    $obBuilder->select($obEntity::FIELD_VALUE_TABLE . ".item_id")
+                              ->from($obEntity::FIELD_VALUE_TABLE)
+                              ->where($obEntity::FIELD_VALUE_TABLE . ".extra_field_id", $arExtraField[ExtraField::getPk()])
+                              ->where($obEntity::FIELD_VALUE_TABLE . "." . $arExtraField["type"]->getColumnForValue(), $operator, $callback, $logic);
+                }, $logic);
+            }
+        }else{
+            $type = "in";
+            $builder = new self($this->connection, $obEntity);
+    
+    		$callback($builder);
+            
+            $this->arWheres[] = compact("type", "column", "builder", "logic", "not");
+            
+            $this->mergeParams($builder);
+        }
+                                        
+		return $this;
+    }    
+    
+    public function where($column, $operator = NULL, $value = NULL, $logic = "AND"){
+        $method = __FUNCTION__;
+        $fieldName = ExtraField::getFieldAliasByName($column);
+        
+        if($fieldName){
+            $obEntity = $this->getEntity();
+            
+            if($arExtraField = $this->getExtraField($fieldName)){
+                $this->whereIn($obEntity->getTableName() . "." . $obEntity->getPk(), function($obBuilder) use($obEntity, $method, $arExtraField, $operator, $value, $logic){
+                    $obBuilder->select($obEntity::FIELD_VALUE_TABLE . ".item_id")
+                              ->from($obEntity::FIELD_VALUE_TABLE)
+                              ->where($obEntity::FIELD_VALUE_TABLE . ".extra_field_id", $arExtraField[ExtraField::getPk()])
+                              ->$method($obEntity::FIELD_VALUE_TABLE . "." . $arExtraField["type"]->getColumnForValue(), $operator, $value, $logic);
+                }, $logic);
+            }
+        }else{
+            parent::$method($column, $operator, $value, $logic);
+        }
+
+		return $this;
+	}
+    
+    public function whereIn($column, $values, $logic = "AND", $not = false){
+        $method = __FUNCTION__;
+        if(is_string($column) && ($fieldName = ExtraField::getFieldAliasByName($column))){
+            $obEntity = $this->getEntity();
+            
+            if($arExtraField = $this->getExtraField($fieldName)){
+                $this->whereIn($obEntity->getTableName() . "." . $obEntity->getPk(), function($obBuilder) use($obEntity, $method, $arExtraField, $values, $logic, $not){
+                    $obBuilder->select($obEntity::FIELD_VALUE_TABLE . ".item_id")
+                              ->from($obEntity::FIELD_VALUE_TABLE)
+                              ->where($obEntity::FIELD_VALUE_TABLE . ".extra_field_id", $arExtraField[ExtraField::getPk()])
+                              ->$method($obEntity::FIELD_VALUE_TABLE . "." . $arExtraField["type"]->getColumnForValue(), $values, $logic, $not);
+                }, $logic);
+            }
+        }else{
+            parent::$method($column, $values, $logic, $not);
+        }
+		
+		return $this;
+	}
+    
+    public function whereNull($column, $logic = "AND", $not = false){
+        $method = __FUNCTION__;
+        if(is_string($column) && ($fieldName = ExtraField::getFieldAliasByName($column))){
+            $obEntity = $this->getEntity();
+            
+            if($arExtraField = $this->getExtraField($fieldName)){
+                $this->whereIn($obEntity->getTableName() . "." . $obEntity->getPk(), function($obBuilder) use($obEntity, $method, $arExtraField, $logic, $not){
+                    $obBuilder->select($obEntity::FIELD_VALUE_TABLE . ".item_id")
+                              ->from($obEntity::FIELD_VALUE_TABLE)
+                              ->where($obEntity::FIELD_VALUE_TABLE . ".extra_field_id", $arExtraField[ExtraField::getPk()])
+                              ->$method($obEntity::FIELD_VALUE_TABLE . "." . $arExtraField["type"]->getColumnForValue(), $logic, $not);
+                }, $logic);
+            }
+        }else{
+            parent::$method($column, $logic, $not);
+        }
+        
+        return $this;
+	}
+    
+    public function whereBetween($column, array $arValues, $logic = "AND", $not = false){
+        $method = __FUNCTION__;
+        if(is_string($column) && ($fieldName = ExtraField::getFieldAliasByName($column))){
+            $obEntity = $this->getEntity();
+            
+            if($arExtraField = $this->getExtraField($fieldName)){
+                $this->whereIn($obEntity->getTableName() . "." . $obEntity->getPk(), function($obBuilder) use($obEntity, $method, $arExtraField, $arValues, $logic, $not){
+                    $obBuilder->select($obEntity::FIELD_VALUE_TABLE . ".item_id")
+                              ->from($obEntity::FIELD_VALUE_TABLE)
+                              ->where($obEntity::FIELD_VALUE_TABLE . ".extra_field_id", $arExtraField[ExtraField::getPk()])
+                              ->$method($obEntity::FIELD_VALUE_TABLE . "." . $arExtraField["type"]->getColumnForValue(), $arValues, $logic, $not);
+                }, $logic);
+            }
+        }else{
+            parent::$method($column, $arValues, $logic, $not);
+        }
+        
+        return $this;
+	}
+    
+    protected function getColumnsSql(){
+        $obEntity = $this->getEntity();
+        
+        $arFields = array();
+        
+        foreach($obEntity->getFields() AS $obField){
+            $arFields[$obField->getFieldName()] = $obField;
+        }
+        
+        $arCustomFields = array();
+        
+        foreach($obEntity->getCustomFields() AS $obCustomField){
+            $arCustomFields[$obCustomField->getFieldName()] = $obCustomField;
+        }
+        
+        $arColumns = array();
+        
+        $this->arCustomColumns  = array();
+        $this->arExtraColumns   = array();
+        
+        $tableAlias = $this->alias ? $this->alias : $this->from;
+        
+        foreach($this->arColumns AS $column){
+            //если выбираем все поля (базовые и кастомные), то не складываем в массив. Ниже добавим в массив
+            if($column == "*" || $column == $tableAlias . ".*"){
+                continue;
+            }
+            
+            if($this->isExpression($column)){
+                $arColumns[] = $column->getValue();
+            }else{
+                if(strpos(strtoupper($column), " AS ") !== false){ //если алиас
+                    list($column, $as, $columnAlias) = explode(" ", $column);
+                    
+                    if($arFields[$column]){
+                        $arColumns[] = $this->connection->quoteColumn($column) . " AS " . $this->connection->quoteColumn($columnAlias);
+                    }else if($arCustomFields[$column]){ //is custom field
+                        $this->arCustomColumns[$column] = $columnAlias;
+                    }else if(($extraColumn = ExtraField::getFieldAliasByName($column))){ //is extra field
+                        $this->arExtraColumns[$extraColumn]  = $columnAlias;
+                    }else{ //if other fields, ex. join table
+                        $arColumns[] = $this->connection->quoteColumn($column) . " AS " . $this->connection->quoteColumn($columnAlias);
+                    }
+                }else{
+                    if($arFields[$column]){
+                        $arColumns[] = $this->connection->quoteColumn($column);
+                    }else if($arCustomFields[$column]){
+                        $this->arCustomColumns[$column]     = $column;
+                    }else if(($extraColumn = ExtraField::getFieldAliasByName($column))){ //is extra field
+                        $this->arExtraColumns[$extraColumn] = $column;
+                    }else{ //if other fields, ex. join table
+                        $arColumns[] = $this->connection->quoteColumn($column);
+                    }
+                }
+            }
+        }
+
+        //load extra columns
+        $fieldPk = ExtraField::getPk();
+        
+        foreach($this->arExtraColumns AS $fieldName => $column){
+            if($fieldName == "*"){
+                $this->loadExtraFields();
+                
+                $this->arExtraColumns = array();
+                
+                foreach($this->arExtraFieldIndexedByID AS $arExtraField){
+                    $fieldID = $arExtraField[$fieldPk];
+                    $this->arExtraColumns[$fieldID] = ExtraField::getFieldNameById($fieldID);
+                }
+                
+                break;
+            }else{
+                $arExtraField = $this->getExtraField($fieldName);
+               
+                if($arExtraField){
+                    $fieldID = $arExtraField[$fieldPk];
+                    
+                    if(!isset($this->arExtraColumns[$fieldID])){ //is alias
+                        $this->arExtraColumns[$fieldID] = $column;
+                        
+                        unset($this->arExtraColumns[$fieldName]);
+                    }
+                }
+            }
+        }
+        
+        if(!count($arColumns)){ //если выбраны все поля
+            foreach($arFields AS $fieldName => $obField){
+                $arColumns[] = $this->connection->quoteColumn($fieldName);
+            }
+            
+            foreach($arCustomFields AS $fieldName => $obCustomField){
+                $this->arCustomColumns[$fieldName] = $fieldName;
+            }
+        }
+        
+        $tableAlias = $this->connection->quoteTable($this->alias ? $this->alias : $this->from) ;
+        
+        if(count($this->arJoins)){ //if we have join table, we must add table alias or tablename to all columns which not contains dot in columnName
+            foreach($arColumns AS $index => $column){
+                if(strpos($column, ".") === false){
+                    $column = $tableAlias . "." . $column;
+                }
+                
+                $arColumns[$index] = $column;
+            }
+        }
+        
+        //we need pk value for extra values and custom values
+        if(count($this->arExtraColumns) || count($this->arCustomColumns)){
+            $pkColumn = $tableAlias . "." . $this->connection->quoteColumn($obEntity->getPk());
+            
+            if(!in_array($pkColumn, $arColumns)){
+                $arColumns[] = $pkColumn;
+            }
+        }
+        
+        return implode(", ", $arColumns);
+    }
+
+    public function fetchAll(){
+        $arItems = parent::fetchAll();
+        
+        $arItems = $this->getExtraFieldValues($arItems);
+        $arItems = $this->getCustomFieldValues($arItems);
+        
+        return $arItems;
+    }
+    
+    public function fetch(){
+        $arItem = parent::fetch();
+        
+        if($arItem){
+            $arItems = array($arItem);
+            $arItems = $this->getExtraFieldValues($arItems);
+            $arItems = $this->getCustomFieldValues($arItems);
+            
+            return reset($arItems);
+        }
+        
+        return false;
+    }
+    
+    protected function getExtraFieldValues(array $arItems = array()){
+        $obEntity   = $this->getEntity();
+        $pk         = $obEntity->getPk();
+
+        if(count($this->arExtraColumns) && count($arItems)){
+            $arItems = CArrayHelper::index($arItems, $pk);
+            
+            foreach($obEntity->getExtraFieldValues(array_keys($arItems), array_keys($this->arExtraColumns)) AS $arFieldValue){
+                $fieldName  = $this->arExtraColumns[$arFieldValue["extra_field_id"]];
+                $itemID     = $arFieldValue["item_id"];
+                
+                if(!is_array($arItems[$itemID][$fieldName])){
+                    $arItems[$itemID][$fieldName] = array();
+                }
+                
+                $columnName = $this->arExtraFieldIndexedByID[$arFieldValue["extra_field_id"]]["type"]->getColumnForValue();
+                
+                if($columnName){
+                    $arItems[$itemID][$fieldName][$arFieldValue["id"]] = $arFieldValue[$columnName];
+                }
+            }
+            
+            /*prepareValues of each field*/
+            foreach($this->arExtraColumns AS $fieldID => $fieldName){
+                $obFieldType    = $this->arExtraFieldIndexedByID[$fieldID]["type"];
+                $arItems        = $obFieldType->prepareFetch($arItems, $pk);
+            }
+            /*prepareValues of each field*/
+            
+            $arItems = array_values($arItems);
+        }
+        
+        return $arItems;
+    }
+    
+    protected function getCustomFieldValues(array $arItems = array()){
+        $obEntity   = $this->getEntity();
+        $pk         = $obEntity->getPk();
+
+        if(count($this->arCustomColumns) && count($arItems)){
+            $arItems = CArrayHelper::index($arItems, $pk);
+            
+            foreach($obEntity->getCustomFields() AS $obCustomField){
+                $fieldName = $obCustomField->getFieldName();
+
+                if(isset($this->arCustomColumns[$fieldName])){
+                    $arItems = $obCustomField->prepareFetch($arItems, $pk);
+                }
+            }
+            
+            $arItems = array_values($arItems);
+        }
+        
+        return $arItems;
+    }
+}
+?>

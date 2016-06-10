@@ -1,0 +1,24 @@
+<?
+namespace Entity;
+
+use \DB\Connection;
+
+abstract class Manager extends BaseManager{
+    static protected $_table;
+    static protected $_pk = "id";
+    
+    static protected $arEvents = array(
+        "ADD"       => "ENTITY.ADD",
+        "UPDATE"    => "ENTITY.UPDATE",
+        "DELETE"    => "ENTITY.DELETE",
+    );
+    
+    abstract public function getFields();
+    
+    static public function builder(){
+        $obBuilder = new ManagerBuilder(Connection::getInstance(), new static);
+
+        return $obBuilder->from(static::getTableName());
+    }
+}
+?>

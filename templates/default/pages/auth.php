@@ -1,0 +1,1 @@
+<?CWidget::render("user.auth", "index", "index");?>

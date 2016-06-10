@@ -1,0 +1,18 @@
+AddDefaultCharset UTF-8
+
+php_value mbstring.internal_encoding UTF-8
+php_value mbstring.func_overload 2
+
+Options -Indexes
+
+Options +FollowSymlinks
+
+DirectoryIndex index.php index.html index.htm
+
+RewriteEngine On
+
+RewriteRule \.(jpg|jpeg|png|gif|ico|js|css)$ - [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ index.php [L,QSA]
