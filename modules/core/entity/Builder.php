@@ -2,10 +2,10 @@
 namespace Entity;
 
 use \DB\Builder AS DbBuilder;
-use \CArrayHelper;
-use \CArrayFilter;
+use \Helpers\CArrayHelper;
+use \Helpers\CArrayFilter;
 use \CEvent;
-use \CPagination;
+use \Helpers\CPagination;
 use \Closure;
 
 class Builder extends DbBuilder{
@@ -24,7 +24,7 @@ class Builder extends DbBuilder{
     
     public function __construct(Entity $obEntity){
         parent::__construct();
-        
+
         $this->obEntity = $obEntity;
         parent::from($obEntity->getTableName());
         

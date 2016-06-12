@@ -1,7 +1,7 @@
 <?
 namespace Entity\Field\Additional;
 
-use \CDateTime;
+use \Helpers\CDateTime;
 use \DB\Expr;
 
 class DateTimeField extends AdditionalField{

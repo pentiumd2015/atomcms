@@ -1,6 +1,8 @@
 <?
+namespace Helpers;
+
 class CArraySorter{
-    static public function subSort(array $arData, $key, $direction = SORT_ASC){
+    static public function sort(array $arData, $key, $direction = SORT_ASC){
         if(is_callable($key)){
             $callback = $key;
         }else{
@@ -69,4 +71,3 @@ class CArraySorter{
         return end($arArgs);
     }
 }
-?>

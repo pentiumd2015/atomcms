@@ -6,11 +6,11 @@ $path           = $this->getParam("urlPath");
 
 $range = 3;
 
-$pageUrlPattern = $path . "?" . CHttpRequest::toQuery(array($urlPageKey => "{PAGE_INDEX}"));
+$pageUrlPattern = CUrl::to($path, [$urlPageKey => "{PAGE_INDEX}"]);
 
 $arTmpQuery = $_GET;
 unset($arTmpQuery[$urlPageKey]);
-$query          = CHttpRequest::toQuery($arTmpQuery, true);
+$query          = CUrl::to(null, $arTmpQuery, true);
 $firstPageURL   = $path . (strlen($query) ? "?" . $query : ""); //if page=1 unset param page
 
 if($obPagination->numPage > 1){
@@ -129,12 +129,3 @@ if($obPagination->numPage > 1){
   		</ul>
     <?
 }
-?>
-
-<?php 
-
-?>
-
-<?php 
-
-?>

@@ -1,7 +1,7 @@
 <?
 $formJsPath = $this->path . "js/adminForm.js";
 
-if(CHttpRequest::isAjax()){
+if(app("request")->isAjax()){
     ?>
         <script type="text/javascript" src="<?=$formJsPath;?>"></script>
     <?

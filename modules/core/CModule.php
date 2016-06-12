@@ -1,27 +1,34 @@
 <?
-class CModule extends \DB\Manager{
-    static protected $_table        = "module";
-    static protected $_pk           = "module_id";
-    static protected $_arConfig     = array();
-    static protected $_arModules    = array();
-    static protected $_arError      = array();
+use \DB\Builder;
+use \Helpers\CFile;
+use \CObject;
+
+class CModule extends CObject{
+    protected $config    = [];
+    protected $modules   = [];
+    protected $errors    = [];
     
-    static public function setConfig($arConfig = array()){
-        return self::$_arConfig = $arConfig;
+    public function __construct(array $config = []){
+        $this->config = $config;
     }
     
-    static public function getConfig(){
-        return self::$_arConfig;
+    public function setConfig(array $config = []){
+        $this->config = $config;
+        
+        return $this;
     }
     
-    static public function load($module){
+    public function getConfig(){
+        return $this->config;
+    }
+    
+    public function load($module){
         if(!is_array($module)){
-            return self::_load($module);
+            return $this->loadModule($module);
         }else{
-            $arModule = $module;
-            
-            foreach($arModule AS $module){
-                if(!self::_load($module)){
+            $modules = $module;
+            foreach($modules AS $module){
+                if(!$this->loadModule($module)){
                     return false;
                 }
             }
@@ -29,41 +36,22 @@ class CModule extends \DB\Manager{
             return true;
         }
     }
-
-    static public function getModuleDir($module){
-        $arConfig   = self::getConfig();
-        $modulePath = str_replace(array("\\", "."), "/" , $module);
-        
-        if(is_dir(ROOT_PATH . $arConfig["path"] . $modulePath)){
-            return $arConfig["path"] . $modulePath;
-        }
-        
-        return false;
-    }
-    
-    static public function getLoaded(){
-        return self::$_arModules;
-    }
     
     /**
      * если расширение  core.someext , то грузим как обычно файл /core/someext.php,
      * если файла нет, то грузим /core/someext/autoload.php
      * если задан путь core.* , то грузим во всех каталогах core/somedir/autoload.php
      */
-    static protected function _load($module){
-        if(self::isLoaded($module)){
+    protected function loadModule($module){
+        if($this->isLoaded($module)){
             return true;
         }
         
-        $arConfig   = self::getConfig();
-        $modulePath = str_replace(array("\\", "."), "/" , $module);
-        
-        if(substr($modulePath, -2) == "/*"){ //если добавляем все расширения в директории
-            $ext        = substr($modulePath, 0, -2);
-            $moduleDir  = self::getModuleDir($ext);
+        if(substr($module, -2) == ".*"){ //если добавляем все расширения в директории
+            $parentModule = substr($module, 0, -2);
 
-            if($moduleDir){
-                $obIterator = \Helpers\CFile::scanDirectory(ROOT_PATH . $moduleDir);
+            if(($moduleDir = $this->getModuleDir($parentModule))){
+                $obIterator = CFile::scanDirectory(ROOT_PATH . $moduleDir);
                 
                 foreach($obIterator AS $obFileinfo){
                     if($obFileinfo->isDot()){
@@ -71,71 +59,82 @@ class CModule extends \DB\Manager{
                     }
                     
                     if($obFileinfo->isDir()){
-                        $module      = $ext . "." . $obFileinfo->getFileName();
-                        $modulePath  = $obFileinfo->getPathname() . "/" . $arConfig["autoloadFile"];
+                        $module         = $parentModule . "." . $obFileinfo->getFileName();
+                        $autoloadFile   = $obFileinfo->getPathname() . "/" . $this->config["autoloadFile"];
                         
-                        if(is_file($modulePath)){
-                            self::$_arModules[$module] = $arConfig["path"] . $ext . "/" . $obFileinfo->getFileName() . "/" . $arConfig["autoloadFile"];
+                        if(is_file($autoloadFile)){
+                            $this->modules[$module] = $this->config["path"] . $parentModule . "/" . $obFileinfo->getFileName() . "/" . $this->config["autoloadFile"];
                             
-                            include($modulePath);
+                            include($autoloadFile);
                         }else{
-                            self::$_arError[$module] = array(
-                                "ERROR_MESSAGE" => "File [" . $arConfig["autoloadFile"] . "] in module [" . $module . "]",
-                                "PATH"          => $modulePath
-                            );
+                            $this->errors[$module] = [
+                                "message"       => "File [" . $this->config["autoloadFile"] . "] not found in module [" . $module . "]",
+                                "autoloadFile"  => $autoloadFile
+                            ];
                             
                             return false;
                         }
                     }
                 }
             }else{
-                self::$_arError[$module] = array(
-                    "ERROR_MESSAGE" => "Module dir [" . $moduleDir . "] in module [" . $module . "] not found",
-                    "PATH"          => $moduleDir
-                );
-            }
-            
-            return true;
-        }else{
-            $moduleDir = self::getModuleDir($module);
-            
-            if($moduleDir){
-                $arFiles = array(
-                    $moduleDir . ".php", //если загружаем файл
-                    $moduleDir . "/" . $arConfig["autoloadFile"] //если грузим директорию, то подгружаем файл автолоада
-                );
+                $this->errors[$module] = [
+                    "message"       => "Module dir [" . $parentModule . "] in module [" . $module . "] not found",
+                    "autoloadFile"  => $moduleDir
+                ];
                 
-                foreach($arFiles AS $modPath){
-                    if(is_file(ROOT_PATH . "/" . $modPath)){
-                        self::$_arModules[$module] = $modPath;
-        
-                        include(ROOT_PATH . "/" . $modPath);
-                        
-                        return true;
-                    }
+                return false;
+            }
+        }else if(($moduleDir = $this->getModuleDir($module))){
+            $files = [
+                $moduleDir . ".php", //если загружаем файл
+                $moduleDir . "/" . $config["autoloadFile"] //если грузим директорию, то подгружаем файл автолоада
+            ];
+            
+            foreach($files AS $moduleFile){
+                if(is_file(ROOT_PATH . "/" . $moduleFile)){
+                    include(ROOT_PATH . "/" . $moduleFile);
+                    
+                    $this->modules[$module] = $moduleFile;
+                    
+                    return true;
                 }
-                
-                self::$_arError[$module] = array(
-                    "ERROR_MESSAGE" => "File [" . implode("] or [", $arFiles) . "] in module [" . $module . "]",
-                    "PATH"          => $moduleDir . "/" . $arConfig["autoloadFile"]
-                );
-            }else{
-                self::$_arError[$module] = array(
-                    "ERROR_MESSAGE" => "Module dir [" . $moduleDir . "] in module [" . $module . "] not found",
-                    "PATH"          => $moduleDir
-                );
             }
             
-            return false;
+            $this->errors[$module] = [
+                "message"       => "File [" . implode("] or [", $files) . "] in module [" . $module . "]",
+                "autoloadFile"  => $moduleDir . "/" . $config["autoloadFile"]
+            ];
+        }else{
+            $this->errors[$module] = [
+                "message"       => "Module [" . $module . "] not found"
+            ];
         }
     }
     
-    static public function isLoaded($module){
-        return isset(self::$_arModules[$module]);
+    public function builder(){
+        return (new Builder)->from("module");
+    }
+
+    public function getModuleDir($module){
+        $modulePath = str_replace(["\\", "."], "/" , $module);
+
+        if(is_dir(ROOT_PATH . $this->config["path"] . $modulePath)){
+            return $this->config["path"] . $modulePath;
+        }
+        
+        return false;
     }
     
-    static public function getErrors(){
-        return self::$_arError;
+    public function getLoaded(){
+        return $this->modules;
+    }
+    
+    public function isLoaded($module){
+        return isset($this->modules[$module]);
+    }
+    
+    public function getErrors(){
+        return $this->errors;
     }
 }
 ?>

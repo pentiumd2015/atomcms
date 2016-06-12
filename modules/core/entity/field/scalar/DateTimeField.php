@@ -1,7 +1,7 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \CDateTime;
+use \Helpers\CDateTime;
 use \DB\Expr;
 use \Entity\Result\SelectResult;
 use \Entity\Result\AddResult;

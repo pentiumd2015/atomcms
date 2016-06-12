@@ -1,7 +1,7 @@
 <?
 namespace Entity;
 
-use \CJSON;
+use \Helpers\CJSON;
 use \CArrayHelper;
 use \DB\Builder AS DbBuilder;
 

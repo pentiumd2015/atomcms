@@ -1,10 +1,10 @@
 <?
 namespace DB;
 
-use \PDO;
-use \CPagination;
+use \Helpers\CPagination;
 use \Closure;
-use \CArrayHelper;
+use \Helpers\CArrayHelper;
+use \CAtom;
 
 class Builder{
     public $arColumns = [];
@@ -64,8 +64,8 @@ class Builder{
     }
           
     public function __construct(Connection $connection = null){
-        if(!$connection){
-            $connection = Connection::getInstance();
+        if($connection == null){
+            $connection = CAtom::$app->db;
         }
         
         $this->setConnection($connection);

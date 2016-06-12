@@ -1,4 +1,6 @@
 <?
+namespace Helpers;
+
 class CHttpResponse{
     const JSON = "application/json";
 	const HTML = "text/html";

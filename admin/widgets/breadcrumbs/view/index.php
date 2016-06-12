@@ -1,11 +1,11 @@
 <div class="breadcrumb-line breadcrumb-top">
     <ul class="breadcrumb">
         <?
-            $count = count($arItems);
+            $count = count($items);
             
             $i = 0;
             
-            foreach($arItems AS $path => $title){
+            foreach($items AS $path => $title){
                 if($i == $count - 1){
                     ?>
                         <li class="active"><?=$title;?></li>
@@ -51,13 +51,13 @@
             </form>
           </div>
         </li>
-        <li class="language dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><img src="<?=$this->app("template")->templatePath;?>/images/flags/german.png" alt=""> <span>German</span> <b class="caret"></b></a>
+        <li class="language dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><img src="<?=$this->baseUrl;?>images/flags/german.png" alt=""> <span>German</span> <b class="caret"></b></a>
           <ul class="dropdown-menu dropdown-menu-right icons-right">
-            <li><a href="#"><img src="<?=$this->app("template")->templatePath;?>/images/flags/ukrainian.png" alt=""> Ukrainian</a></li>
-            <li class="active"><a href="#"><img src="<?=$this->app("template")->templatePath;?>/images/flags/english.png" alt=""> English</a></li>
-            <li><a href="#"><img src="<?=$this->app("template")->templatePath;?>/images/flags/spanish.png" alt=""> Spanish</a></li>
-            <li><a href="#"><img src="<?=$this->app("template")->templatePath;?>/images/flags/german.png" alt=""> German</a></li>
-            <li><a href="#"><img src="<?=$this->app("template")->templatePath;?>/images/flags/hungarian.png" alt=""> Hungarian</a></li>
+            <li><a href="#"><img src="<?=$this->baseUrl;?>images/flags/ukrainian.png" alt=""> Ukrainian</a></li>
+            <li class="active"><a href="#"><img src="<?=$this->baseUrl;?>images/flags/english.png" alt=""> English</a></li>
+            <li><a href="#"><img src="<?=$this->baseUrl;?>images/flags/spanish.png" alt=""> Spanish</a></li>
+            <li><a href="#"><img src="<?=$this->baseUrl;?>images/flags/german.png" alt=""> German</a></li>
+            <li><a href="#"><img src="<?=$this->baseUrl;?>images/flags/hungarian.png" alt=""> Hungarian</a></li>
           </ul>
         </li>
       </ul>

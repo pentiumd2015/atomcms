@@ -1,6 +1,6 @@
 <!-- Navbar -->
 <div class="navbar navbar-inverse" role="navigation">
-  <div class="navbar-header"><a class="navbar-brand" href="#"><img src="<?=$this->app("template")->templatePath;?>/images/logo.png" alt="Londinium"></a><a class="sidebar-toggle"><i class="icon-paragraph-justify2"></i></a>
+  <div class="navbar-header"><a class="navbar-brand" href="#"><img src="<?=$this->baseUrl;?>images/logo.png" alt="Londinium"></a><a class="sidebar-toggle"><i class="icon-paragraph-justify2"></i></a>
     <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-icons"><span class="sr-only">Toggle navbar</span><i class="icon-grid3"></i></button>
     <button type="button" class="navbar-toggle offcanvas"><span class="sr-only">Toggle navigation</span><i class="icon-paragraph-justify2"></i></button>
   </div>

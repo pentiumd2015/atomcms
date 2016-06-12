@@ -1,56 +1,31 @@
 <?
-if(version_compare(PHP_VERSION, '5.3.10', '<')){
-	exit('PHP needs 5.3.10 or higher');
+error_reporting(E_ALL);
+ini_set('error_reporting', E_ALL);
+//ini_set("log_errors", true);
+ini_set("display_errors", true);
+//ini_set("error_log", $_SERVER["DOCUMENT_ROOT"] . "/log.log");
+
+//добавить больше проверок сервера
+if(version_compare(PHP_VERSION, "5.4", "<")){
+	exit("PHP needs 5.4 or higher");
 }
 
-$baseURL = str_replace('\\', '/', dirname($_SERVER["PHP_SELF"]));
+$baseURL = str_replace("\\", "/", dirname($_SERVER["PHP_SELF"]));
 
 if($baseURL != "/"){
     $baseURL.= "/";
 }
 
-define("ADMIN_ROOT_PATH", __DIR__);
-define("ROOT_PATH", dirname(ADMIN_ROOT_PATH));
+define("ROOT_PATH", __DIR__);
 define("BASE_URL", $baseURL);
-define("MODULE_PATH", ROOT_PATH . '/modules');
-define("CORE_PATH", MODULE_PATH . '/core');
 
-require_once(ROOT_PATH . "/modules/core/CAutoload.php");
+require_once(ROOT_PATH . "/../modules/core/CAutoload.php");
 
-CAutoload::init();
-
-CAutoload::addDirMap(array(
+CAutoload::getInstance()->addDirMap([
     "/modules",
     "/modules/core"
-));
+]);
 
+$config = include(ROOT_PATH . "/config/config.php");
 
-
-$configFile = __DIR__ . "/config/config.php";
-
-$arConfig = include($configFile);
-
-CModule::setConfig($arConfig["module"]);
-
-if(CModule::load("core.admin")){
-    $obApp = CAdminApplication::getInstance();
-    
-    $obApp->setConfig($arConfig);
-    $obApp->process();
-}
-
-
-
-
-//require_once(ROOT_PATH . "/modules/core/admin/admin.autoload.php");
-
-
-?>
-
-<?php 
-
-?>
-
-<?php 
-
-?>
+(new Admin\CApplication($config))->run();

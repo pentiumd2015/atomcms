@@ -3,7 +3,7 @@ namespace Entity\Result;
 
 class UpdateResult extends BaseResult{
 	protected $numAffectedRows;
-    protected $arIds = [];
+    protected $arIDs = [];
     protected $arItem = [];
     protected $arChangedData = [];
 
@@ -17,14 +17,14 @@ class UpdateResult extends BaseResult{
 		return $this->numAffectedRows;
 	}
 
-    public function setID(array $arIds = []){
-        $this->arIds = $arIds;
+    public function setID(array $arIDs = []){
+        $this->arIDs = $arIDs;
         
         return $this;
     }
     
     public function getID(){
-        return $this->arIds;
+        return $this->arIDs;
     }
     
     public function getData(){

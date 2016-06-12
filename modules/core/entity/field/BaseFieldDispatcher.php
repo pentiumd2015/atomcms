@@ -45,8 +45,6 @@ abstract class BaseFieldDispatcher{
     }
     
     protected function onAfterAdd(AddResult $obResult){
-        $function = __FUNCTION__;
-        
         foreach($obResult->getData() AS $fieldName => $value){
             if($obField = $this->getField($fieldName)){
                 $obField->onAfterAdd($value, $obResult);

@@ -1,8 +1,8 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \CHtml;
-use \CArrayHelper;
+use \Helpers\CHtml;
+use \Helpers\CArrayHelper;
 
 class BooleanRenderer extends ListRenderer{
     public function renderFilter($value, array $arData = [], array $arOptions = []){

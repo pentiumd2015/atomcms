@@ -1,4 +1,7 @@
 <?
+namespace Helpers;
+
+
 class CFile{
     static public function getArrayFromFile($filePath){
         if(is_file($filePath) && ($array = include($filePath)) && is_array($array)){

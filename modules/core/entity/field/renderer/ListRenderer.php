@@ -1,9 +1,9 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \CHtml;
-use \CArrayHelper;
-use \CBuffer;
+use \Helpers\CHtml;
+use \Helpers\CArrayHelper;
+use \Helpers\CBuffer;
 
 class ListRenderer extends BaseRenderer{
     public $values = NULL;

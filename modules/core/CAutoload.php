@@ -1,29 +1,45 @@
 <?
 class CAutoload{
-    static protected $arAutoloadDirMap      = array();
-    static protected $arAutoLoadClassMap    = array();
+    protected static $obj       = null;
+    protected $autoloadDirMap   = [];
+    protected $autoLoadClassMap = [];
+    protected $rootPath         = null;
     
-    static public function getRootPath(){
-		return $_SERVER["DOCUMENT_ROOT"];
-    }
-    
-    static public function init(){
-        spl_autoload_extensions(".php");
-        spl_autoload_register(array(__CLASS__, "load"));
-    }
-    
-    static protected function load($className){
-        $classPath  = self::preparePath($className);
-        $rootPath   = self::getRootPath();
+    public static function getInstance(){
+        if(static::$obj == null){
+            static::$obj = new static;
+        }
         
-        if(isset(self::$arAutoLoadClassMap[$classPath])){
-            $file = self::$arAutoLoadClassMap[$classPath];
+        return static::$obj;
+    }
+    
+    public function __construct(){
+        spl_autoload_extensions(".php");
+        spl_autoload_register([$this, "load"]);
+    }
+    
+    public function setRootPath($rootPath = null){
+        $this->rootPath = $rootPath;
+        
+        return $this;
+    }
+    
+    public function getRootPath(){
+		return $this->rootPath ? $this->rootPath : $_SERVER["DOCUMENT_ROOT"];
+    }
+    
+    protected function load($className){
+        $classPath  = $this->preparePath($className);
+        $rootPath   = $this->getRootPath();
+        
+        if(isset($this->autoLoadClassMap[$classPath])){
+            $file = $this->autoLoadClassMap[$classPath];
         
             if(is_file($rootPath . "/" . $file)){
                 require_once($rootPath . "/" . $file);
                 return;
             }else{
-                foreach(self::$arAutoloadDirMap AS $dirPath => $loaded){
+                foreach($this->autoloadDirMap AS $dirPath => $loaded){
                     $classFile = $rootPath . "/" . $dirPath . "/" . $file;
                     
                     if(is_file($classFile)){
@@ -33,8 +49,8 @@ class CAutoload{
                 }
             }
         }
-
-        foreach(self::$arAutoloadDirMap AS $dirPath => $loaded){
+        
+        foreach($this->autoloadDirMap AS $dirPath => $loaded){
             $classFile = $rootPath . "/" . $dirPath . "/" . $classPath . ".php";
 
             if(is_file($classFile)){
@@ -43,33 +59,32 @@ class CAutoload{
             }
         }
         
+        exit;
+        
         return false;
     }
     
-    static public function addDirMap($dirPath){ //add dir for autoload classes
-        $arDirs = is_array($dirPath) ? $dirPath : array($dirPath) ;
+    public function addDirMap($dirPath){ //add dir for autoload classes
+        $dirPaths = is_array($dirPath) ? $dirPath : [$dirPath] ;
         
-        foreach($arDirs AS $dirPath){
-            $dirPath = str_replace("\\", "/", $dirPath);
-            $dirPath = ltrim($dirPath, "/");
-            
-            if(!isset(self::$arAutoloadDirMap[$dirPath])){
-                self::$arAutoloadDirMap[$dirPath] = true;
-            }
+        foreach($dirPaths AS $dirPath){
+            $this->autoloadDirMap[$this->normalizePath($dirPath)] = true;
         }
     }
     
-    public static function addClassMap(array $arClasses){
-		foreach($arClasses AS $class => $classPath){
-            $classPath = str_replace("\\", "/", $classPath);
-            $classPath = ltrim($classPath, "/");
-			self::$arAutoLoadClassMap[self::preparePath($class)] = $classPath;
+    public function addClassMap(array $classMap){
+		foreach($classMap AS $class => $classPath){
+			$this->autoLoadClassMap[$this->preparePath($class)] = $this->normalizePath($classPath);
 		}
 	}
     
-    static protected function preparePath($classPath){
-        $classPath = str_replace(array("_", "\\"), "/", $classPath);
-        $classPath = ltrim($classPath, "/");
+    protected function normalizePath($path){
+        $path = str_replace("\\", "/", $path);
+        return ltrim($path, "/");
+    }
+    
+    protected function preparePath($classPath){
+        $classPath = $this->normalizePath($classPath);
 
         if(($lastPos = strripos($classPath, "/")) !== false){
             $classPath = strtolower(substr($classPath, 0, $lastPos)) . substr($classPath, $lastPos);

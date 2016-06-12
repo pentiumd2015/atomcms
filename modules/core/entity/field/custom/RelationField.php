@@ -3,11 +3,10 @@ namespace Entity\Field\Custom;
 
 use \CUser;
 use \CUserGroup;
-use \CArrayHelper;
+use \Helpers\CArrayHelper;
 use \DB\Builder AS DbBuilder;
 use \DB\JoinCondition;
 use \Entity\Builder;
-use \CStorage;
 
 class RelationField extends Field{
     protected $arInfo = array(

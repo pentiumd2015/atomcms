@@ -1,4 +1,6 @@
 <?
+namespace Helpers;
+
 class CJSON{
     static public function encode($mixed, $flag = JSON_UNESCAPED_UNICODE /*| JSON_PRETTY_PRINT*/, $depth = 512){
         return json_encode($mixed, $flag, $depth);
@@ -8,4 +10,3 @@ class CJSON{
         return json_decode($str, $isAssoc);
     }
 }
-?>

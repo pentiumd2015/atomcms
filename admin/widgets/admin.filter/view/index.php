@@ -1,7 +1,7 @@
 <?
 $filterJsPath = $this->path . "js/adminFilter.js";
 
-if(CHttpRequest::isAjax()){
+if(app("request")->isAjax()){
     ?>
         <script type="text/javascript" src="<?=$filterJsPath;?>"></script>
     <?

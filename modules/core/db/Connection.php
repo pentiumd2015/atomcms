@@ -2,64 +2,30 @@
 namespace DB;
 
 use \CEvent;
-use \CException;
+use \PDOException;
 
 class Connection{
-    protected $driver;
-    protected static $obj;
+    protected $pdo;
+    protected $result;
     
-    /**
-     * Singleton
-     */
-    public static function getInstance(){
-        if(!isset(self::$obj)){
-            $obReflection  = new \ReflectionClass(__CLASS__);
-            self::$obj = $obReflection->newInstanceArgs(func_get_args());
+    public function getPDO(){
+        return $this->pdo;
+    }
+    
+    public function __construct(array $params){
+        $this->dsn      = $params["dsn"];
+        $this->username = $params["username"];
+        $this->password = $params["password"];
+        
+        CEvent::trigger("CORE.DB.CONNECT.BEFORE", [$this]);
+        
+        try{
+            $this->pdo = new PDO($this->dsn, $this->username, $this->password, $params["attributes"]);
+        }catch(PDOException $e){
+            throw new PDOException($e->getMessage(), $e->errorInfo, $e->getCode(), $e);
         }
         
-        return self::$obj;
-    }
-    
-    static protected $arDrivers = array(
-		"mysql" => "\DB\Driver\MysqlDriver"
-	);
-    
-    public function setDrivers(array $arDrivers){
-        $this->arDrivers = array_merge($this->arDrivers, $arDrivers);
-        
-        return $this;
-    }
-    
-    public function getDrivers(){
-        return $this->arDrivers;
-    }
-    
-    public function __construct($dsn, $username, $password){
-        $this->dsn      = $dsn;
-        $this->username = $username;
-        $this->password = $password;
-        
-        $dbType = $this->getDbType();
-
-        if(isset(self::$arDrivers[$dbType])){
-            $className = self::$arDrivers[$dbType];
-            
-            if(class_exists($className, true)){
-                CEvent::trigger("CORE.DB.CONNECT.BEFORE", array($this));
-                
-                try{
-                    $this->driver = new $className($this->dsn, $this->username, $this->password);
-                }catch(Exception $e){
-                    CEvent::trigger("CORE.DB.CONNECT.ERROR", array($this, $e));
-                }
-                
-                CEvent::trigger("CORE.DB.CONNECT.AFTER", array($this));
-            }else{
-                throw new CException("DB driver [" . $className . "] not found");
-            }
-        }else{
-            throw new CException("DB driver [" . $className . "] not available");
-        }
+        CEvent::trigger("CORE.DB.CONNECT.AFTER", [$this]);
         
         return $this;
     }
@@ -70,67 +36,112 @@ class Connection{
         }
     }
     
-    public function getDriver(){
-        return $this->driver;
-    }
-    
-    static public function table($table){
-		return static::getBuilder()->from($table);
-	}
-    
     static public function getBuilder(){
-        $obConnection = static::getInstance();
-        return new Builder($obConnection);
+        return new Builder($this);
     }
     
-    public function query($sql, $arStatements = array()){
+    public function query($sql, $statements = []){
         try{
-            CEvent::trigger("CORE.DB.QUERY.BEFORE", array($this, $sql, $arStatements));
+            CEvent::trigger("CORE.DB.QUERY.BEFORE", [$this, $sql, $statements]);
             
-            $obStatement = $this->driver->query($sql, $arStatements);
+            $this->result = $this->pdo->prepare($sql);
+            $this->result->execute($statements);
             
-            CEvent::trigger("CORE.DB.QUERY.AFTER", array($this, $sql, $arStatements));
+            CEvent::trigger("CORE.DB.QUERY.AFTER", [$this, $sql, $statements]);
             
-            return $obStatement;
-        }catch(\PDOException $e){
-            CEvent::trigger("CORE.DB.QUERY.ERROR", array($this, $e));
+            return $this->result;
+        }catch(PDOException $e){
+            CEvent::trigger("CORE.DB.QUERY.ERROR", [$this, $e]);
         }
     }
     
-    public function setAttributes(array $arAttributes){
-        foreach($arAttributes AS $attribute => $value){
-            $this->driver->setAttribute($attribute, $value);
+    public function setAttributes(array $attributes){
+        foreach($attributes AS $attribute => $value){
+            $this->pdo->setAttribute($attribute, $value);
         }
 
         return $this;
     }
     
     public function setAttribute($attribute, $value){
-        $this->driver->setAttribute($attribute, $value);
+        $this->pdo->setAttribute($attribute, $value);
 
         return $this;
     }
     
     public function beginTransaction(){
-        $this->driver->beginTransaction();
+        $this->pdo->beginTransaction();
         
         return $this;
     }
     
     public function rollBack(){
-        $this->driver->rollBack();
+        $this->pdo->rollBack();
         
         return $this;
     }
     
     public function commit(){
-        $this->driver->commit();
+        $this->pdo->commit();
         
         return $this;
     }
     
-    public function __call($method, $arParams){
-		return call_user_func_array(array($this->driver, $method), $arParams);
-	}
+    public function freeResult(){
+        $this->result = NULL;
+    }
+    
+    public function quoteTable($table){
+        if(strpos(strtoupper($table), " AS ") !== false){ // with alias
+            list($tableName, , $tableAlias) = explode(" ", $tableName, 3);
+            $table = $this->_quoteTable($tableName) . " AS " . $this->quoteColumn($tableAlias);
+        }else{
+            $table = $this->_quoteTable($table);
+        }
+        
+        return $table;
+    }
+    
+    public function quoteColumn($column){
+        $columnName     = $column;
+        $columnTable    = null;
+        
+        if(strpos($column, ".") !== false){
+            list($columnTable, $columnName) = explode(".", $column, 2);
+        }
+        
+        $columnAlias = null;
+        
+        if(stripos($columnName, " as ") !== false){ //if alias
+            list($columnName, $columnAlias) = preg_split("/\s+as\s+/si", $columnName, 2, PREG_SPLIT_NO_EMPTY);
+        }
+        
+        $column = $this->_quoteColumn($columnName);
+        
+        if($columnTable){
+            $column = $this->quoteTable($columnTable) . $column;
+        }
+        
+        if($columnAlias){
+            $column.= " AS " . $this->_quoteColumn($columnAlias);
+        }
+        
+        return $column;
+    }
+    
+    protected function _quoteTable($tableName){
+        $parts = (strpos($tableName, ".") === false) ? [$tableName] : explode(".", $tableName) ;
+        
+        foreach($parts AS $i => $part){
+            $parts[$i] = (strpos($part, "`") !== false ? $part : "`" . $part . "`");
+        }
+        
+        return implode(".", $parts);
+    }
+
+    protected function _quoteColumn($columnName){
+        return strpos($columnName, "`") !== false || $columnName === "*" ? $columnName : "`" . $columnName . "`";
+    }
+    
 }
 ?>

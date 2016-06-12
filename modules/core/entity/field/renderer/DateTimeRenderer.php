@@ -1,9 +1,9 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \CHtml;
-use \CBuffer;
-use \CDateTime;
+use \Helpers\CHtml;
+use \Helpers\CBuffer;
+use \Helpers\CDateTime;
 
 class DateTimeRenderer extends StringRenderer{
     public function renderFilter($value, array $arData = [], array $arOptions = []){

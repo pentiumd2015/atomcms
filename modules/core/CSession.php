@@ -1,26 +1,23 @@
 <?
-use \DB\Connection;
 
 class CSession implements SessionHandlerInterface{
-    private static $_instance;
-    
-    static public function save(){
-        if(self::$_instance){
-            self::$_instance->write(static::getSessionID(), session_encode());
-        }
+    public function __construct($dbService){
+        $this->db = CAtom::app($dbService);
     }
     
-    static public function getSessionID(){
+    public function save(){
+        $this->write($this->getSessionID(), session_encode());
+    }
+    
+    public function getSessionID(){
         return session_id();
     }
     
-    static public function start(){
-        if(!self::$_instance){
-            self::$_instance = new self;
-            
+    public function start(){
+        if(session_status() == PHP_SESSION_NONE){
             register_shutdown_function("session_write_close");
             
-            session_set_save_handler(self::$_instance, true);
+            session_set_save_handler($this, true);
             session_start();
         }
     }
@@ -28,32 +25,28 @@ class CSession implements SessionHandlerInterface{
     /**
      * устанавливаем значение указанному ключу сессии 
      */
-    static public function set($key, $value = NULL){
+    public function set($key, $value = NULL){
         $_SESSION[$key] = $value;
     }
     
     /**
      * получаем значение указанного ключа сессии
      */
-    static public function get($key){
+    public function get($key){
         return isset($_SESSION[$key]) ? $_SESSION[$key] : NULL ;
     }
     
-    static public function getAll(){
+    public function getAll(){
         return $_SESSION;
     }
     
-    static public function clear($key){
+    public function clear($key){
         unset($_SESSION[$key]);
     }
     
-    static public function clearAll(){
+    public function clearAll(){
        // session_unset();
         session_destroy();
-    }
-    
-    public function __construct(){
-        $this->db = Connection::getInstance();
     }
     
     public function close(){
@@ -110,14 +103,14 @@ class CSession implements SessionHandlerInterface{
                 $arData["expire"] = time() + $sessionMaxLifeTime;
             }
             
-            $this->db->update("user_session", $arData, "session_id=?", array($arSession["session_id"]));
+           // $this->db->update("user_session", $arData, "session_id=?", array($arSession["session_id"]));
             
             return $arSession["session_id"];
         }else{
             $arData["expire"]       = time() + $sessionMaxLifeTime;
             $arData["session_id"]   = $sessionID;
             
-            return $this->db->insert("user_session", $arData);
+          //  return $this->db->insert("user_session", $arData);
         }
     }
 }

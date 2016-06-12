@@ -1,8 +1,8 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \CHtml;
-use \CBuffer;
+use \Helpers\CHtml;
+use \Helpers\CBuffer;
 
 class PasswordRenderer extends StringRenderer{
     public function renderDetail($value, array $arData = [], array $arOptions = []){

@@ -1,7 +1,7 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \CArrayHelper;
+use \Helpers\CArrayHelper;
 use Entity\Field\Renderer\NumericRenderer;
 
 class IntegerField extends Field{

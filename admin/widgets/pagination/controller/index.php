@@ -1,11 +1,2 @@
 <?
 $this->includeView();
-?>
-
-<?php 
-
-?>
-
-<?php 
-
-?>

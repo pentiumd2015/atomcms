@@ -1,8 +1,8 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \CHtml;
-use \CBuffer;
+use \Helpers\CHtml;
+use \Helpers\CBuffer;
 
 class StringRenderer extends BaseRenderer{
     public function renderList($value, array $arListData = [], array $arOptions = []){

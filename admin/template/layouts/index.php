@@ -5,14 +5,14 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Test</title>
-        <link href="<?=$this->template->templatePath;?>css/bootstrap.css" rel="stylesheet" type="text/css">
-        <link href="<?=$this->template->templatePath;?>css/londinium-theme.css" rel="stylesheet" type="text/css">
-        <link href="<?=$this->template->templatePath;?>css/styles.css" rel="stylesheet" type="text/css">
-        <link href="<?=$this->template->templatePath;?>css/icons.min.css" rel="stylesheet" type="text/css">
+        <link href="<?=$this->baseUrl;?>css/bootstrap.css" rel="stylesheet" type="text/css">
+        <link href="<?=$this->baseUrl;?>css/londinium-theme.css" rel="stylesheet" type="text/css">
+        <link href="<?=$this->baseUrl;?>css/styles.css" rel="stylesheet" type="text/css">
+        <link href="<?=$this->baseUrl;?>css/icons.min.css" rel="stylesheet" type="text/css">
         <link href="http://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&amp;subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
         
         
-        <link href="<?=$this->template->templatePath;?>css/note.jquery.css" rel="stylesheet" type="text/css">
+        <link href="<?=$this->baseUrl;?>css/note.jquery.css" rel="stylesheet" type="text/css">
         
         
         
@@ -24,15 +24,15 @@
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/jquery-ui.min.js"></script>
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/i18n/jquery-ui-i18n.js"></script>
         
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>js/admin.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>js/admin.js"></script>
         
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>js/modal.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>js/modal.js"></script>
         
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>js/plugins/forms/inputnum.jquery.js"></script>
-        <link href="<?=$this->template->templatePath;?>css/bootstrap.checkbox.css" rel="stylesheet" type="text/css" />
+        <script type="text/javascript" src="<?=$this->baseUrl;?>js/plugins/forms/inputnum.jquery.js"></script>
+        <link href="<?=$this->baseUrl;?>css/bootstrap.checkbox.css" rel="stylesheet" type="text/css" />
 
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>js/plugins/forms/select.jquery.js"></script>
-        <link href="<?=$this->template->templatePath;?>css/select.jquery.css" rel="stylesheet" type="text/css" />
+        <script type="text/javascript" src="<?=$this->baseUrl;?>js/plugins/forms/select.jquery.js"></script>
+        <link href="<?=$this->baseUrl;?>css/select.jquery.css" rel="stylesheet" type="text/css" />
         
         
         
@@ -41,37 +41,37 @@
         
         
         
-        <!--<script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/charts/sparkline.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/uniform.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/select2.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/inputmask.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/autosize.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/inputlimit.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/listbox.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/multiselect.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/validate.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/tags.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/switch.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/uploader/plupload.full.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/uploader/plupload.queue.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/wysihtml5/wysihtml5.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/forms/wysihtml5/toolbar.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/interface/daterangepicker.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/interface/fancybox.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/interface/moment.js"></script>
+        <!--<script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/charts/sparkline.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/uniform.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/select2.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/inputmask.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/autosize.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/inputlimit.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/listbox.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/multiselect.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/validate.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/tags.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/switch.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/uploader/plupload.full.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/uploader/plupload.queue.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/wysihtml5/wysihtml5.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/forms/wysihtml5/toolbar.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/interface/daterangepicker.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/interface/fancybox.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/interface/moment.js"></script>
         -->
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>js/plugins/interface/note.jquery.js"></script>
-        <!--<script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/interface/datatables.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/interface/colorpicker.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/interface/fullcalendar.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/interface/timepicker.min.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>/js/plugins/interface/collapsible.min.js"></script>-->
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>js/bootstrap.js"></script>
-        <script type="text/javascript" src="<?=$this->template->templatePath;?>js/application.js"></script>
-        <?CPage::showHead();?>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>js/plugins/interface/note.jquery.js"></script>
+        <!--<script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/interface/datatables.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/interface/colorpicker.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/interface/fullcalendar.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/interface/timepicker.min.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>/js/plugins/interface/collapsible.min.js"></script>-->
+        <script type="text/javascript" src="<?=$this->baseUrl;?>js/bootstrap.js"></script>
+        <script type="text/javascript" src="<?=$this->baseUrl;?>js/application.js"></script>
+        <?$this->showHead();?>
     </head>
 <body class="sidebar-wide">
-    <?/*CWidget::render("navigation", "index", "index");*/?>
+    <?CWidget::run("navigation", "index", "index");?>
     <div class="page-container">
         <!-- Sidebar -->
         <div class="sidebar">
@@ -108,14 +108,14 @@
                     </div>
                 </div>*/?>
                 <!-- /user dropdown -->
-                <?CWidget::render("menu", "sidebar", "sidebar");?>
+                <?CWidget::run("menu", "sidebar", "sidebar");?>
             </div>
         </div>
         <!-- /sidebar -->
         <div class="page-content-wrapper">
             <div class="page-content">
-                <?CWidget::render("breadcrumbs", "index", "index");?>
-                <?=$this->content;?>
+                <?CWidget::run("breadcrumbs", "index", "index");?>
+                <?=$content;?>
             </div>
         </div>
     </div>
@@ -124,11 +124,3 @@
     </div>
 </body>
 </html>
-
-<?php 
-
-?>
-
-<?php 
-
-?>

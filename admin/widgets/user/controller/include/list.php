@@ -1,10 +1,11 @@
 <?
-use \Entity\Display;
+use Entity\Display;
+use Helpers\CPagination;
 
-$userID = $this->app("user")->getID();
+$userID = CAtom::$app->user->getID();
 
 /*Apply Request Group*/
-if($_REQUEST["group"] && $_REQUEST["checkbox_item"]){
+if(isset($_REQUEST["group"]) && $_REQUEST["checkbox_item"]){
     $arGroupItems = $_REQUEST["checkbox_item"];
 
     if(is_array($arGroupItems)){
@@ -24,19 +25,20 @@ if($_REQUEST["group"] && $_REQUEST["checkbox_item"]){
 /*Apply Request Group*/
 $obUser                 = new CUser;
 $obDisplay              = new Display($obUser);
-$obPagination           = new CPagination($_GET["page"], ($_GET["perPage"] ? $_GET["perPage"] : 20));
+$obPagination           = new CPagination(isset($_GET["page"]) ? (int)$_GET["page"] : 1, (isset($_GET["perPage"]) ? (int)$_GET["perPage"] : 20));
+
 $arDisplayListFields    = $obDisplay->getDisplayListFields($userID);
 
 $arUsers = $obUser->search([
-    "filter"        => $_GET["f"],
-    "sort"          => [$_GET["sort"] => $_GET["by"]],
+    "filter"        => isset($_GET["f"]) ? $_GET["f"] : [],
+    "sort"          => [isset($_GET["sort"]) ? $_GET["sort"] : "id" => isset($_GET["by"]) ? $_GET["by"] : "ASC"],
     "pagination"    => $obPagination,
     "select"        => array_keys($arDisplayListFields)
 ]);
 
 $entityName = $obUser->getEntityName();
 
-$this->setData([
+$this->setViewData([
     "listID"                    => $entityName . "_list",
     "filterID"                  => $entityName . "_filter",
     "arUsers"                   => $arUsers,
@@ -48,4 +50,3 @@ $this->setData([
 ]);
 
 $this->includeView("list");
-?>

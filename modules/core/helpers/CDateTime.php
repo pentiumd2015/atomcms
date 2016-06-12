@@ -1,5 +1,7 @@
 <?
-class CDateTime extends DateTime{
+namespace Helpers;
+
+class CDateTime extends \DateTime{
     static public $arMonthNames = array("января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря");
     
     public function format($format){
@@ -17,4 +19,3 @@ class CDateTime extends DateTime{
         return $d && $d->format($format) == $date;
     }
 }
-?>

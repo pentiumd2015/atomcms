@@ -1,15 +1,20 @@
 <?
+
 class CBreadcrumbs{
-    const DEFERRED_EVENT_KEY = "BREADCRUMBS";
-    
-    static public function add($arData){
-        CDynamicContent::addData(static::DEFERRED_EVENT_KEY, $arData);
+    static public function add(array $data = []){
+        $view = CAtom::$app->view;
+        $breadcrumbs = $view->getDynamicData("BREADCRUMBS");
+        
+        if(!isset($breadcrumbs["items"])){
+            $breadcrumbs["items"] = [];
+        }
+        
+        $breadcrumbs["items"] = array_merge($breadcrumbs["items"], $data);
+        
+        $view->setDynamicData("BREADCRUMBS", $breadcrumbs);
     }
     
     static public function show($callback){
-        if(is_callable($callback)){
-            echo CDynamicContent::add(static::DEFERRED_EVENT_KEY, $callback);
-        }
+        echo CAtom::$app->view->addDynamic("BREADCRUMBS", $callback);
     }
 }
-?>

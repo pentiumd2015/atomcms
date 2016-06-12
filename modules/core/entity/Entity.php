@@ -98,13 +98,11 @@ abstract class Entity{
     public function onAfterDelete($obResult){}
     
     static public function getByID($id){
-        return static::builder()->where(static::getPk(), $id)
-                                ->fetch();
+        return static::builder()->where(static::getPk(), $id)->fetch();
     }
     
     static public function getAllByID($arIDs){
-        return static::builder()->whereIn(static::getPk(), $arIDs)
-                                ->fetchAll();
+        return static::builder()->whereIn(static::getPk(), $arIDs)->fetchAll();
     }
     
     static public function add(array $arData){
@@ -112,37 +110,19 @@ abstract class Entity{
     }
     
     static public function update($id, array $arData){
-        $obResult = static::builder()->where(static::getPk(), $id)
-                                     ->update($arData);
-        
-        if($obResult->isSuccess()){
-            if(($arIDs = $obResult->getID()) && is_array($arIDs)){
-                $obResult->setID($arIDs);
-            }
-        }
-        
-        return $obResult;
+        return static::builder()->where(static::getPk(), $id)->update($arData);
     }
     
     static public function updateAll(array $arIDs, array $arData){
-        return static::builder()->whereIn(static::getPk(), $arIDs)
-                                ->update($arData);
+        return static::builder()->whereIn(static::getPk(), $arIDs)->update($arData);
     }
     
     static public function delete($id){
-        $obResult = static::builder()->where(static::getPk(), $id)
-                                     ->delete();
-        
-        if($obResult->isSuccess() && ($arIDs = $obResult->getID()) && is_array($arIDs)){
-            $obResult->setID(reset($arIDs));
-        }
-        
-        return $obResult;
+        return static::builder()->where(static::getPk(), $id)->delete();
     }
     
     static public function deleteAll(array $arIDs){
-        return static::builder()->whereIn(static::getPk(), $arIDs)
-                                ->delete();
+        return static::builder()->whereIn(static::getPk(), $arIDs)->delete();
     }
     
     public function search(array $arParams = []){

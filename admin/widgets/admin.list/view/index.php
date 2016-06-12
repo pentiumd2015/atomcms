@@ -1,7 +1,7 @@
 <?
 $jsDir = $this->path;
 
-if(CHttpRequest::isAjax()){
+if(app("request")->isAjax()){
     ?>
         <script type="text/javascript" src="<?=$jsDir;?>js/colResizable-1.5.min.js"></script>
         <script type="text/javascript" src="<?=$jsDir;?>js/adminList.js"></script>

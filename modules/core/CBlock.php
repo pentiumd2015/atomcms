@@ -1,4 +1,5 @@
 <?
+
 class CBlock extends CView{
     public $path;
     public $file;
@@ -11,8 +12,8 @@ class CBlock extends CView{
     
     protected $arConfig = array();
     
-    static public function setConfig($arConfig = array()){
-        return self::$_arConfig = $arConfig;
+    public static function setConfig(array $config = []){
+        return self::$_arConfig = $config;
     }
     
     static public function getConfig(){
@@ -61,4 +62,3 @@ class CBlock extends CView{
         return $obBlock->result;
     }
 }
-?>

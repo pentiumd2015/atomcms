@@ -1,25 +1,10 @@
 <?
-$obWidget = $this;
+$widget = $this;
 
-CBreadcrumbs::show(function($arItems) use ($obWidget){
-    $arItems = array("/" => "Главная") + $arItems;
-
-    if(count($arItems) > 1){
-        $obWidget->setData(array(
-            "arItems" => $arItems
-        ));
-        
-        return $obWidget->getViewContent();
-    }
-    
-    return "";
+CBreadcrumbs::show(function($items) use($widget){
+    return $this->view->render(ROOT_PATH . $widget->viewFile, $items);
 });
-?>
 
-<?php 
-
-?>
-
-<?php 
-
-?>
+CBreadcrumbs::add([
+    "/" => "Главная",
+]);

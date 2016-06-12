@@ -1,4 +1,6 @@
 <?
+namespace Helpers;
+
 class CPagination{
     public $perPage;
     public $page;

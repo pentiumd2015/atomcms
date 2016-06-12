@@ -1,10 +1,10 @@
 <?
-include(ROOT_PATH . $this->path . "classes/SidebarMenu.php");
+include(dirname(__DIR__) . "/classes/SidebarMenu.php");
 
-$obMenu = new SidebarMenu($this->app("route")->url);
+$this->view->addJs(BASE_URL . $this->path . "js/script.js");
+$this->view->addCss(BASE_URL . $this->path . "css/style.css");
 
-CPage::addJS($this->path . "js/script.js");
-CPage::addCSS($this->path . "css/style.css");
+$obMenu = new SidebarMenu(CAtom::$app->route->url);
 
 $defaultSidebarFile = __DIR__ . "/include/defaultSidebarItems.php";
 
@@ -14,11 +14,10 @@ if(is_file($defaultSidebarFile) && ($arDefaultSidebarItems = include($defaultSid
 
 CEvent::trigger("MENU.SIDEBAR.BEFORE.RENDER", array($obMenu));
 
-$this->setData(array(
-    "obMenu"    => $obMenu
+$this->setViewData(array(
+    "obMenu" => $obMenu
 ));
 
 $this->includeView();
 
 CEvent::trigger("MENU.SIDEBAR.AFTER.RENDER", array($obMenu));
-?>

@@ -10,28 +10,27 @@ if(!$arFormData){
     CEvent::trigger("404");
 }
 
-$formID = $obUser->getEntityName();
+$formID         = $obUser->getEntityName();
+$redirectUrl    = str_replace("{ID}", $id, $editURL);
 
 if($_REQUEST[$formID]){
-    $obResult = $obUser->update($arFormData["id"], $_REQUEST[$formID]);
+    $obResult = $obUser->update($id, $_REQUEST[$formID]);
 
-    if(CHttpRequest::isAjax()){
-        $arResponse = array("result" => 1);
+    if(app("request")->isAjax()){
+        $arResponse = ["result" => 1];
         
         if($obResult->isSuccess()){
-            $id = $obResult->getID();
             $arResponse["hasErrors"]    = 0;
-            $arResponse["id"]           = $id;
-            $arResponse["redirectURL"]  = str_replace("{ID}", $id, $editURL);
+            $arResponse["redirectURL"]  = $redirectUrl;
         }else{
             $arResponse["hasErrors"]    = 1;
-            $arResponse["errors"]       = array();
+            $arResponse["errors"]       = [];
             
             foreach($obResult->getErrors() AS $obFieldError){
-                $arResponse["errors"][$obFieldError->getFieldName()] = array(
+                $arResponse["errors"][$obFieldError->getFieldName()] = [
                     "code"      => $obFieldError->getCode(),
                     "message"   => $obFieldError->getMessage()
-                );
+                ];
             }
         }
 
@@ -41,20 +40,19 @@ if($_REQUEST[$formID]){
     }
 }
 
-CBreadcrumbs::add(array(
+CBreadcrumbs::add([
     $listURL    => "Список пользователей",
-    $addURL     => "Редактирование пользователя"
-));
+    $addURL     => $obUser->login
+]);
 
 $obDisplay = new Display($obUser);
 
-$this->setData(array(
+$this->setData([
     "arDisplayFields"   => $obDisplay->getDisplayDetailFields($userID),
     "formID"            => $formID,
     "listURL"           => $listURL,
-    "editURL"           => str_replace("{ID}", $arFormData["id"], $editURL),
     "arFormData"        => $arFormData
-));
+]);
 
 $this->includeView("edit");
 ?>

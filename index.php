@@ -1,4 +1,8 @@
 <?
+error_reporting(E_ALL);
+
+ini_set("display_errors", true);
+
 if(version_compare(PHP_VERSION, '5.3.10', '<')){
 	exit('PHP needs 5.3.10 or higher');
 }

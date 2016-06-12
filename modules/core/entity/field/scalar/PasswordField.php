@@ -6,11 +6,11 @@ use \Entity\Result\UpdateResult;
 use \Entity\Field\Renderer\PasswordRenderer;
 
 class PasswordField extends StringField{
+    public $algorithm;
+    
     protected $arInfo = [
         "title" => "Пароль"
     ];
-    
-    public $algorithm;
     
     public function getRenderer(){
         return new PasswordRenderer($this);
@@ -18,9 +18,7 @@ class PasswordField extends StringField{
     
     protected function onSave($value, $obResult){
         if(is_callable($this->algorithm)){
-            $hash = $this->algorithm($value);
-            
-            
+            $hash = call_user_func_array($this->algorithm, [$value]);
             
             return $value == $hash ? null : $hash ;
         }else{

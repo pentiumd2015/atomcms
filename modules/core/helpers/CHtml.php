@@ -1,4 +1,6 @@
 <?
+namespace Helpers;
+
 class CHtml{
     static public $arVoidTags = array(
         'area'      => 1,

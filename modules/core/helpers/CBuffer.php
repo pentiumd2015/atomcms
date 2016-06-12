@@ -1,4 +1,6 @@
 <?
+namespace Helpers;
+
 class CBuffer{
     static public function start($callback = NULL){
         ob_start($callback);

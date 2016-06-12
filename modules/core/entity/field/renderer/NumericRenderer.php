@@ -1,8 +1,8 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \CHtml;
-use \CBuffer;
+use \Helpers\CHtml;
+use \Helpers\CBuffer;
 
 class NumericRenderer extends StringRenderer{
     public function renderFilter($value, array $arData = [], array $arOptions = []){

@@ -1,5 +1,6 @@
 <?
-class CTemplate extends CConstruct{
+class CTemplate extends CObject{
+    protected $config    = [];
     public $templatePath;
     public $layoutPath;
     public $layoutFile;
@@ -11,12 +12,18 @@ class CTemplate extends CConstruct{
     
     static protected $_arConfig = array();
     
-    static public function setConfig($arConfig = array()){
-        return self::$_arConfig = $arConfig;
+    public function __construct(array $config = []){
+        $this->config = $config;
     }
     
-    static public function getConfig(){
-        return self::$_arConfig;
+    public function setConfig(array $config = []){
+        $this->config = $config;
+        
+        return $this;
+    }
+    
+    public function getConfig(){
+        return $this->config;
     }
     
     static public function getList(){

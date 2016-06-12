@@ -7,8 +7,8 @@ use \Entity\Result\AddResult;
 use \Entity\Result\UpdateResult;
 use \Entity\Result\DeleteResult;
 use \Entity\Result\SelectResult;
-use \CArrayHelper;
-use \CArrayFilter;
+use \Helpers\CArrayHelper;
+use \Helpers\CArrayFilter;
 
 class FieldDispatcher extends \Entity\Field\BaseFieldDispatcher{
     const FIELD_VALUE_TABLE = "new_entity_extra_field_value";

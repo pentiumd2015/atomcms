@@ -2,47 +2,54 @@
 class CPage{
     const DYNAMIC_KEY_NAME = "TEMPLATE_HEAD";
     
-    static public function addJS($path, $priority = false){
-        $arData = CDynamicContent::getData(self::DYNAMIC_KEY_NAME);
+    public function __construct(){
+        $this->dynamic = CAtom::$app->template->dynamic;
+    }
+    
+    public function addJS($path, $priority = false){
+        $arData = $this->dynamic->getData(self::DYNAMIC_KEY_NAME);
         
         if(!isset($arData["JS"]) || !isset($arData["JS"][$path])){
-            $priority = $priority !== false ? (int)$priority : count($arData["JS"]);
+            $count = isset($arData["JS"]) ? count($arData["JS"]) : 0 ;
+            $priority = $priority !== false ? (int)$priority : $count;
             
-            CDynamicContent::addData(self::DYNAMIC_KEY_NAME, array(
+            $this->dynamic->addData(self::DYNAMIC_KEY_NAME, array(
                 "JS" => array($path => $priority)
             ));
         }
     }
     
-    static public function addCSS($path, $priority = 0){
-        $arData = CDynamicContent::getData(self::DYNAMIC_KEY_NAME);
+    public function addCSS($path, $priority = 0){
+        $arData = $this->dynamic->getData(self::DYNAMIC_KEY_NAME);
         
         if(!isset($arData["CSS"]) || !isset($arData["CSS"][$path])){
-            $priority = $priority !== false ? (int)$priority : count($arData["CSS"]);
+            $count = isset($arData["CSS"]) ? count($arData["CSS"]) : 0 ;
+            $priority = $priority !== false ? (int)$priority : $count;
             
-            CDynamicContent::addData(self::DYNAMIC_KEY_NAME, array(
+            $this->dynamic->addData(self::DYNAMIC_KEY_NAME, array(
                 "CSS" => array($path => $priority)
             ));
         }
     }
     
-    static public function addString($str, $priority = 0){
-        $arData = CDynamicContent::getData(self::DYNAMIC_KEY_NAME);
+    public function addString($str, $priority = 0){
+        $arData = $this->dynamic->getData(self::DYNAMIC_KEY_NAME);
         
         if(!isset($arData["STRING"]) || !isset($arData["STRING"][$str])){
-            $priority = $priority !== false ? (int)$priority : count($arData["STRING"]);
+            $count = isset($arData["STRING"]) ? count($arData["STRING"]) : 0 ;
+            $priority = $priority !== false ? (int)$priority : $count;
             
-            CDynamicContent::addData(self::DYNAMIC_KEY_NAME, array(
+            $this->dynamic->addData(self::DYNAMIC_KEY_NAME, array(
                 "STRING" => array($str => $priority)
             ));
         }
     }
     
-    static public function showHead(){
-        echo CDynamicContent::add(self::DYNAMIC_KEY_NAME, array(__CLASS__, "_showHead"));
+    public function showHead(){
+        echo $this->dynamic->add(self::DYNAMIC_KEY_NAME, array(__CLASS__, "_showHead"));
     }
     
-    static public function _showHead($arData){            
+    public function _showHead($arData){            
         $result = NULL;
         
         if(isset($arData["JS"]) && is_array($arData["JS"])){
@@ -60,7 +67,7 @@ class CPage{
         return $result;
     }
     
-    static protected function _getJsString($arData = array()){
+    protected function _getJsString($arData = array()){
         $str = "";
 
         uasort($arData, function($a, $b){
@@ -78,7 +85,7 @@ class CPage{
         return $str;
     }
     
-    static protected function _getCssString($arData = array()){
+    protected function _getCssString($arData = array()){
         $str = "";
         
         uasort($arData, function($a, $b){
@@ -96,7 +103,7 @@ class CPage{
         return $str;
     }
     
-    static protected function _getStrString($arData = array()){
+    protected function _getStrString($arData = array()){
         $str = "";
         
         uasort($arData, function($a, $b){
@@ -114,4 +121,3 @@ class CPage{
         return $str;
     }
 }
-?>

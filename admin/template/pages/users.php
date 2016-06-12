@@ -1,5 +1,5 @@
 <?
-$obRoute            = $this->app("route");
+$obRoute            = CAtom::$app->route;
 
 $listGroupAccessURL = "/admin/user_group_access/";
 $addGroupAccessURL  = "/admin/user_group_access/add/";
@@ -17,7 +17,7 @@ switch($obRoute->path){
     case $listGroupAccessURL:
     case $addGroupAccessURL:
     case $editGroupAccessURL:
-        CWidget::render("user.group.access", "index", "index", array(
+        CWidget::run("user.group.access", "index", "index", array(
             "editURL"   => $editGroupAccessURL,
             "addURL"    => $addGroupAccessURL,
             "listURL"   => $listGroupAccessURL
@@ -26,7 +26,7 @@ switch($obRoute->path){
     case $listGroupURL:
     case $addGroupURL:
     case $editGroupURL:
-        CWidget::render("user.group", "index", "index", array(
+        CWidget::run("user.group", "index", "index", array(
             "editURL"   => $editGroupURL,
             "addURL"    => $addGroupURL,
             "listURL"   => $listGroupURL
@@ -35,7 +35,7 @@ switch($obRoute->path){
     case $listUserURL:
     case $addUserURL:
     case $editUserURL:
-        CWidget::render("user", "index", "index", array(
+        CWidget::run("user", "index", "index", array(
             "editURL"   => $editUserURL,
             "addURL"    => $addUserURL,
             "listURL"   => $listUserURL

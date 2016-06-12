@@ -1,9 +1,10 @@
 <?
 class CRoute{
-    public $active;
+    public $active = true;
     public $templates = array();
     public $path;
     public $url;
+    protected $varValues = [];
     
     public function __construct(array $arRoute){
         foreach($arRoute AS $property => $value){
@@ -21,9 +22,11 @@ class CRoute{
         return isset($arValues[$paramName]) ? $arValues[$paramName] : false ;
     }
     
-    static public function checkMatchParams($uri, $pattern, &$arResult, $arPatternParams = array()){
+    static public function getMatch($uri, $pattern, $arPatternParams = array()){
+        $arResult = [];
+        
         if($uri == $pattern && strpos($uri, "{") === false){
-            return true;
+            return $arResult;
         }
         
         $regexp = "#^". preg_replace("#\{.+?\}#", "(.+?)", $pattern) ."$#";
@@ -67,7 +70,7 @@ class CRoute{
                 }
             }
             
-            return true;
+            return $arResult;
         }
 
 		return false;

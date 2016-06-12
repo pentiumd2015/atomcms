@@ -188,8 +188,10 @@ class CUser extends \Entity\Entity{
     protected function _auth(array $arUser = array(), $rememberMe = false){
         $this->arData   = $arUser;
         $obGroupBuilder = CUserGroup::builder();
+        
+        $userID = isset($arUser[static::getPk()]) ? $arUser[static::getPk()] : null ;
 
-        if(($userID = $arUser[static::getPk()]) && count($arUser["groups"])){
+        if($userID && count($arUser["groups"])){
             $arGroups = $obGroupBuilder->whereIn(CUserGroup::getPk(), $arUser["groups"])
                                        ->fetchAll();
 
@@ -238,7 +240,7 @@ class CUser extends \Entity\Entity{
             }
         }
         
-        CSession::set("user_session", $this->arData);
+        CAtom::$app->session->set("user_session", $this->arData);
 
         return true;
     }
@@ -247,10 +249,10 @@ class CUser extends \Entity\Entity{
         return $this->arData;
     }
 
-    public function initCurrent(){
-        $arData = CSession::get("user_session");
+    public function identify(){
+        $data = CAtom::$app->session->get("user_session");
 
-        if(!$arData){ //if we are have not any data for user
+        if(!$data){ //if we are have not any data for user
             $hash = CCookie::get("uidHash");
             
             if(!$hash){ //if cookie hash is empty
@@ -259,7 +261,7 @@ class CUser extends \Entity\Entity{
                 $this->authByHash($hash); //else auth by hash
             }
         }else{
-            $this->arData = $arData;
+            $this->arData = $data;
         }
 
         return $this;

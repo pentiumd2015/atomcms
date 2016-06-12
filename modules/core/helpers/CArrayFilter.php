@@ -1,4 +1,6 @@
 <?
+namespace Helpers;
+
 class CArrayFilter{
     static public function filter(array $arData, $callback = NULL){
         if(is_callable($callback)){
@@ -8,4 +10,3 @@ class CArrayFilter{
         return array_filter($arData);
     }
 }
-?>

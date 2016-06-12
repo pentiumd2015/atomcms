@@ -1,145 +1,45 @@
 <?
-class CWidget extends CView{
+
+use Helpers\CFile;
+
+class CWidget{
     public $path;
     public $controllerName;
-    public $controllerPath;
     public $controllerFile;
     public $viewName;
-    public $viewPath;        
     public $viewFile;
     public $name;
-    public $params;
-    public $content;
-    public $result;
+    public $params = [];
+    public $content = null;
+    public $result = null;
+    public $view;
+    protected $data = [];
     
-    static protected $_arConfig = array();
+    protected static $mainConfig = [];
     
-    protected $arConfig = array();
+    protected $config = [];
     
-    static public function setConfig($arConfig = array()){
-        return self::$_arConfig = $arConfig;
+    public static function setConfig(array $config = []){
+        return self::$mainConfig = $config;
     }
     
-    static public function getConfig(){
-        return self::$_arConfig;
+    public static function getConfig(){
+        return self::$mainConfig;
     }
     
-    public function __construct($arConfig = array()){
-        $arDefaultConfig = self::getConfig();
-        
-        if(!count($arConfig)){
-            $arConfig = $arDefaultConfig;
-        }else{
-            $arConfig+= $arDefaultConfig;
-        }
-        
-        $this->arConfig = $arConfig;
+    public function __construct(array $config = []){
+        $this->config   = array_merge(self::getConfig(), $config);
+        $this->view     = CAtom::$app->view;
     }
     
-    public function includeWidget($name, $controllerName, $viewName = false, $arParams = array()){
-        $this->name             = $name;
-        $this->params           = $arParams;
-        $this->controllerName   = $controllerName;
-        $this->viewName         = $viewName;
-        $this->path             = CFile::normalizePath("/" . $this->arConfig["path"] . "/" . $this->name . "/");
+    public function setViewData(array $data = []){
+        $this->data = $data;
         
-        $this->controllerPath   = $this->path . $this->arConfig["controllerPath"];
-        $this->controllerFile   = CFile::normalizePath($this->controllerPath . "/" . $this->controllerName);
-        
-        if(substr($this->controllerFile, -4) != ".php"){
-            $this->controllerFile.= ".php";
-        }
-        
-        if(strpos($this->controllerName, "/") !== false){
-            $this->controllerPath = CFile::normalizePath(dirname($this->controllerFile) . "/");
-        }
-        
-        $this->viewPath = $this->path . $this->arConfig["viewPath"];
-        $this->viewFile = $this->viewName ? CFile::normalizePath($this->viewPath . "/" . $this->viewName) : false ;
-        
-        if($this->viewFile){
-            if(substr($this->viewFile, -4) != ".php"){
-                $this->viewFile.= ".php";
-            }
-            
-            if(strpos($this->viewName, "/") !== false){
-                $this->viewPath = CFile::normalizePath(dirname($this->viewFile) . "/");
-            }
-        }
-        
-        CEvent::trigger("CORE.WIDGET.CONTROLLER.BEFORE", array($this));
-
-        if(is_file(ROOT_PATH . $this->controllerFile)){
-            $obResult       = $this->process(ROOT_PATH . $this->controllerFile);
-            $this->content  = $obResult->content;
-            $this->result   = $obResult->result;
-        }else{
-            CEvent::trigger("CORE.WIDGET.CONTROLLER.NOT_FOUND", array($this));
-        }
-        
-        CEvent::trigger("CORE.WIDGET.CONTROLLER.AFTER", array($this));
-        
-        return $this->result;
+        return $this;
     }
     
-    protected function getViewProcess($viewName = false, $extractDataKeys = true){
-        if($viewName){
-            if(substr($viewName, -4) != ".php"){
-                $viewName.= ".php";
-            }
-            
-            $this->viewFile = CFile::normalizePath($this->viewPath . "/" . $viewName);
-            $this->viewPath = CFile::normalizePath(dirname($this->viewFile) . "/");
-        }
-
-        CEvent::trigger("CORE.WIDGET.VIEW.PROCESS.BEFORE", array($this));
-        
-        if($this->viewFile && is_file(ROOT_PATH . $this->viewFile)){
-            $obResult = $this->process(ROOT_PATH . $this->viewFile, $extractDataKeys);
-        }else{
-            $obResult           = new stdClass;
-            $obResult->content  = false;
-            $obResult->result   = false;
-            CEvent::trigger("CORE.WIDGET.VIEW.NOT_FOUND", array($this));
-        }
-        
-        CEvent::trigger("CORE.WIDGET.VIEW.PROCESS.AFTER", array($this, $obResult));
-        return $obResult;
-    }
-    
-    public function getViewContent($viewName = false, $extractDataKeys = true){
-        $obResult = $this->getViewProcess($viewName, $extractDataKeys);
-
-        return $obResult->content;
-    }
-    
-    public function getViewResult($viewName = false, $extractDataKeys = true){
-        $obResult = $this->getViewProcess($viewName, $extractDataKeys);
-
-        return $obResult->result;
-    }
-    
-    public function includeView($viewName = false, $extractDataKeys = true){
-        $obResult = $this->getViewProcess($viewName, $extractDataKeys);
-        
-        $this->content = $obResult->content;
-        
-        if($this->content){
-            echo $this->content;
-        }
-        
-        return $obResult->result;
-    }
-
-    static public function render($name, $controllerName = "index", $viewName = false, $arParams = array(), $arConfig = array()){
-        $obWidget = new self($arConfig);
-        $obWidget->includeWidget($name, $controllerName, $viewName, $arParams);
-        
-        if($obWidget->content){
-            echo $obWidget->content;
-        }
-        
-        return $obWidget->result;
+    public function getViewData(){
+        return $this->data;
     }
     
     public function getParams(){
@@ -147,7 +47,68 @@ class CWidget extends CView{
     }
     
     public function getParam($paramName){
-        return isset($this->params[$paramName]) ? $this->params[$paramName] : NULL ;
+        return isset($this->params[$paramName]) ? $this->params[$paramName] : null ;
+    }
+    
+    public function includeView($viewName = null){
+        if($viewName !== null){
+            if(substr($viewName, -4) != ".php"){
+                $viewName.= ".php";
+            }
+            
+            $this->viewFile = CFile::normalizePath($this->viewPath . "/" . $viewName);
+        }
+        
+        if($this->viewFile){
+            if(is_file(ROOT_PATH . $this->viewFile)){
+                $this->view->widget = $this;
+                echo $this->view->render(ROOT_PATH . $this->viewFile, $this->getViewData());
+            }else{
+                CEvent::trigger("CORE.WIDGET.VIEW.NOT_FOUND", [$this]);
+            }
+        }
+    }
+
+    public function render($name, $controllerName = "index", $viewName = null, array $params = []){
+        $this->name             = $name;
+        $this->controllerName   = $controllerName;
+        $this->viewName         = $viewName;
+        $this->params           = $params;
+        $this->path             = CFile::normalizePath("/" . $this->config["path"] . "/" . $this->name . "/");
+        $this->controllerFile   = CFile::normalizePath($this->path . $this->config["controllerPath"] . "/" . $this->controllerName);
+        
+        if(substr($this->controllerFile, -4) != ".php"){
+            $this->controllerFile.= ".php";
+        }
+        
+        $this->viewFile = $this->viewName ? CFile::normalizePath($this->path . $this->config["viewPath"] . "/" . $this->viewName) : null ;
+        
+        if($this->viewFile){
+            if(substr($this->viewFile, -4) != ".php"){
+                $this->viewFile.= ".php";
+            }
+        }
+        
+        CEvent::trigger("CORE.WIDGET.BEFORE", [$this]);
+
+        if(is_file(ROOT_PATH . $this->controllerFile)){
+            $this->result = require(ROOT_PATH . $this->controllerFile);
+        }else{
+            CEvent::trigger("CORE.WIDGET.NOT_FOUND", [$this]);
+        }
+        
+        CEvent::trigger("CORE.WIDGET.AFTER", [$this]);
+        
+        if($this->content !== null){
+            echo $this->content;
+        }
+
+        return $this->result;
+    }
+    
+    public static function run($name, $controllerName = "index", $viewName = false, array $params = []){
+        $config = self::getConfig();
+        $module = new self($config);
+        return $module->render($name, $controllerName, $viewName, $params);
     }
 }
-?>

@@ -3,7 +3,7 @@ $listURL    = $this->getParam("listURL");
 $addURL     = $this->getParam("addURL");
 $editURL    = $this->getParam("editURL");
 
-$obRoute    = $this->app("route");
+$obRoute    = CAtom::$app->route;
 $fileName   = false;
 
 switch($obRoute->path){

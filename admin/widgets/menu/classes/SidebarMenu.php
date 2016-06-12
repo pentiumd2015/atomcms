@@ -1,4 +1,6 @@
 <?
+use Helpers\CBuffer;
+
 class SidebarMenu{
     public $items = array();
     
@@ -30,17 +32,17 @@ class SidebarMenu{
             foreach($arMenu AS $arItem){
                 $active = false;
                 
-                if($arItem["link"]){
+                if(isset($arItem["link"])){
                     $active = $this->checkActiveMenuLink($arItem["link"]);
                 }
                 
-                if(!$active && is_array($arItem["extraLinks"])){
+                if(!$active && isset($arItem["extraLinks"]) && is_array($arItem["extraLinks"])){
                     $active = $this->checkActiveMenuLink($arItem["extraLinks"]);
                 }
                 ?>
                     <li<?=($active ? ' class="active"' : "")?>>
                         <?
-                            if(count($arItem["items"])){
+                            if(isset($arItem["items"]) && count($arItem["items"])){
                                 ?>
                                     <a href="#" class="expand"<?=($depthLevel > 1 ? 'style="padding-left: ' . (30 * ($depthLevel - 1)) . 'px;"' : "")?>>
                                         <span><?=$arItem["title"];?></span>
@@ -56,10 +58,10 @@ class SidebarMenu{
                                 <?
                             }else{
                                 ?>
-                                    <a href="<?=$arItem["link"];?>"<?=($depthLevel > 1 ? 'style="padding-left: ' . (25 * ($depthLevel - 1)) . 'px;"' : "")?>>
+                                    <a href="<?=(isset($arItem["link"]) ? $arItem["link"] : "");?>"<?=($depthLevel > 1 ? 'style="padding-left: ' . (25 * ($depthLevel - 1)) . 'px;"' : "")?>>
                                         <span><?=$arItem["title"];?></span>
                                         <?
-                                            if($arItem["icon"]){
+                                            if(isset($arItem["icon"])){
                                                 ?>
                                                     <i class="<?=$arItem["icon"];?>"></i>
                                                 <?
@@ -86,7 +88,7 @@ class SidebarMenu{
         });
         
         foreach($arItems AS &$arItem){
-            if($arItem["items"]){
+            if(isset($arItem["items"])){
                 $arItem["items"] = $this->_recursiveMenuSort($arItem["items"], $sortKey);
             }
         }
@@ -128,7 +130,7 @@ class SidebarMenu{
             return false;
         }
         
-        if($arResult["query"]){
+        if(isset($arResult["query"])){
             return $arResult["query"] == array_intersect_assoc($arResult["query"], $_GET);
         }
         

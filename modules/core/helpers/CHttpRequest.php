@@ -1,47 +1,40 @@
 <?
+namespace Helpers;
+
 class CHttpRequest{
-    static public function toQuery($arParams = array(), $isOnlyParams = false, $separator = "&"){            
-        $result = "";
-        
-        if(!$isOnlyParams){
-            $arParams = array_merge($_GET, $arParams);
-        }
-        
-        /*
-        p(urldecode(http_build_query($arParams, "", $separator)));
-        foreach($arParams AS $key => $val){
-            $result.= $separator . $key . $equalSymbol . $val ;
-        }
-        
-        if($result){
-            $result = ltrim($result, $separator);
-        }
-        */
-        return urldecode(http_build_query($arParams, "", $separator));
+    public function isAjax(){
+        return isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && $_SERVER["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest";
+    }
+
+    public function request($name = null, $defaultValue = null){
+        return $this->getQueryParams($_REQUEST, $name, $defaultValue);
     }
     
-    static public function isAjax(){
-        return (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest');
+    public function get($name = null, $defaultValue = null){
+        return $this->getQueryParams($_GET, $name, $defaultValue);
     }
     
-    static public function get($key = NULL){
-        if(!$key){
-            return $_REQUEST;
+    public function post($name = null, $defaultValue = null){
+        return $this->getQueryParams($_POST, $name, $defaultValue);
+    }
+    
+    public function isPost(){
+        return $_SERVER["REQUEST_METHOD"] == "POST";
+    }
+    
+    public function isGet(){
+        return $_SERVER["REQUEST_METHOD"] == "GET";
+    }
+    
+    public function isRequest(){
+        return ($this->isGet() || $this->isPost());
+    }
+    
+    protected function getQueryParams(array $array = [], $name = null, $defaultValue = null){
+        if($name == null){
+            return $array;
         }else{
-            return isset($_REQUEST[$key]) ? $_REQUEST[$key] : NULL ;
+            return isset($array[$name]) ? $array[$name] : $defaultValue;
         }
-    }
-    
-    static public function isPost(){
-        return $_SERVER['REQUEST_METHOD'] == 'POST';
-    }
-    
-    static public function isGet(){
-        return $_SERVER['REQUEST_METHOD'] == 'GET';
-    }
-    
-    static public function isRequest(){
-        return (self::isPost() || self::isGet());
     }
 }
-?>

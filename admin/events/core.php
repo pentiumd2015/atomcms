@@ -26,13 +26,13 @@ CEvent::on("CORE.START", function(){
     }*//**/
 });
 
-CEvent::on('CORE.DB.CONNECT.AFTER', function($obConnection){
+CEvent::on('CORE.DB.CONNECT.AFTER', function($connection){
     $timezone = "Asia/Yekaterinburg";
     
     date_default_timezone_set($timezone);
     
-    $obConnection->query("SET lc_time_names=?", array("ru_RU"));
-    $obConnection->query("SET time_zone=?", array($timezone));
+    $connection->query("SET lc_time_names=?", ["ru_RU"]);
+    $connection->query("SET time_zone=?", [$timezone]);
 });
 
 CEvent::on(array(
@@ -66,7 +66,7 @@ CEvent::on(array(
     "CORE.DB.QUERY.ERROR" => function($obConnection, $arErrors){
         echo "<pre>" . print_r($arErrors, true) , "</pre>";
     },
-    'CORE.SHUTDOWN'         => function($obApp, $errorType){
+    'CORE.SHUTDOWN'         => function($errorType){
         $arErrors = error_get_last();
            
         if($arErrors && ($arErrors["type"] & $errorType)){
@@ -102,7 +102,9 @@ CEvent::on(array(
         echo $exception->getFile(), "</br>";
         echo $exception->getLine(), "</br>";
         
-      //  CUtils::p($exception->getTrace());
+        
+        
+       p($exception->getTrace());
     }
 )); 
 ?>

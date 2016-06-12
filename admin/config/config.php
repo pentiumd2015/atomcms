@@ -1,8 +1,4 @@
 <?
-//get client site config
-$obSiteApp      = new \Application\CApplication;
-$arSiteConfig   = $obSiteApp->getConfig();
-
 return array(
     "errors" => array(
         "logFile"          => "error.log",
@@ -11,23 +7,32 @@ return array(
         "errorTypes"       => E_ALL ^ E_NOTICE
     ),
     "template" => array(
-        "path"              => BASE_URL . "template/",
+        "path"              => "/template/",
         "pagePath"          => "pages/",
         "layoutPath"        => "layouts/",
         "blockPath"         => "blocks/"
     ),
     "widget" => array(
-        "path"              => BASE_URL . "widgets/",
+        "path"              => "/widgets/",
         "controllerPath"    => "controller/",
         "viewPath"          => "view/"    
     ),
     "module" => array(
-        "path"              => "/modules/",
+        "path"              => "/modules",
         "autoloadFile"      => "admin.autoload.php"
     ),
-    "eventFile"             => BASE_URL . "events/core.php",
-    "routeFile"             => BASE_URL . "config/route.php",
-    "moduleFile"            => BASE_URL . "config/module.php",
-    "db"                    => $arSiteConfig["db"]
+    "eventFile"             => "/events/core.php",
+    "routeFile"             => "/config/route.php",
+    "modules"               => include(__DIR__ . "/modules.php"),
+    "routes"                => include(__DIR__ . "/routes.php"),
+    "db" => array(
+        "dsn"       => "mysql:host=localhost;dbname=cms",
+        "username"  => "root",
+        "password"  => "",
+        "attributes"=> array(
+            PDO::ATTR_ERRMODE               => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE    => PDO::FETCH_ASSOC,
+            PDO::MYSQL_ATTR_INIT_COMMAND    => "SET NAMES UTF8"
+        )
+    )
 );
-?>
