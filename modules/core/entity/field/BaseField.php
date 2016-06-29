@@ -1,58 +1,79 @@
 <?
 namespace Entity\Field;
 
-use \DB\Expr;
-use \DB\Builder AS DbBuilder;
-use \Entity\Result\BaseResult;
-use \Entity\Result\SelectResult;
-use \Entity\Result\AddResult;
-use \Entity\Result\UpdateResult;
-use \Entity\Result\DeleteResult;
-use \Entity\Entity;
+use DB\Expr;
+use DB\Manager\Error;
+use DB\Manager\Validate\IValidate;
+use DB\Manager\Validate\Required AS ValidateRequired;
 
 abstract class BaseField{
     protected $name;
     protected $alias;
-    protected $obFieldDispatcher;
-    protected $arInfo = [];
+    protected $fieldDispatcher;
+    protected $info = [];
     
-    public $title       = "";
-    public $description = "";
-    public $disabled    = false;
-    public $required    = false;
-    public $multi       = false;
-    public $visible     = true;
-    public $primary     = false;
-    public $validate    = null;
-    public $onSaveData  = null;
-    public $onFetchData = null;
+    public $title           = "";
+    public $description     = "";
+    public $sortable        = true;
+    public $filterable      = true;
+    public $disabled        = false;
+    public $required        = false;
+    public $multi           = false;
+    public $visible         = true;
+    public $validate        = null;
+    public $onSaveData      = null;
+    public $onFetchData     = null;
+    public $defaultValue    = null;
     
     abstract public function getRenderer();
     abstract public function condition($method, array $args = []);
 
-    public function __construct($name, array $arParams = []){
+    public function __construct($name, $params = []){
         $this->name = $name;
         
-        foreach($arParams AS $name => $value){
-            $this->{$name} = $value;
+        $safeParams = [ //присваиваем только разрешенные параметры
+            "title",
+            "description",
+            "sortable",
+            "filterable",
+            "disabled",
+            "required",
+            "multi",
+            "visible",
+            "validate",
+            "onSaveData",
+            "onFetchData",
+            "defaultValue"
+        ];
+        
+        foreach($safeParams AS $param){
+            if(isset($params[$param])){
+                $this->{$param} = $params[$param];
+            }
         }
     }
     
-    public function onFetch(SelectResult $obResult){}
-    public function onBeforeAdd($value, AddResult $obResult){}
-    public function onAfterAdd($value, AddResult $obResult){}
-    public function onBeforeUpdate($value, UpdateResult $obResult){}
-    public function onAfterUpdate($value, UpdateResult $obResult){}
-    public function onBeforeDelete($value, DeleteResult $obResult){}
-    public function onAfterDelete($value, DeleteResult $obResult){}
-    public function onSelect(){}
-    
-    public function getInfo(){
-        return $this->arInfo;
+    public function getDefaultValue(){
+        return $this->defaultValue;
     }
     
-    public function setInfo(array $arInfo){
-        $this->arInfo = $arInfo;
+    public function onFetch($result){}
+    public function onBeforeAdd($value, $result){}
+    public function onAfterAdd($value, $result){}
+    public function onBeforeUpdate($value, $result){}
+    public function onAfterUpdate($value, $result){}
+    public function onBeforeDelete($result){}
+    public function onAfterDelete($result){}
+    public function onSelect(){
+        return $this->name;
+    }
+    
+    public function getInfo(){
+        return $this->info;
+    }
+    
+    public function setInfo(array $info){
+        $this->info = $info;
     }
     
     public function getName(){
@@ -70,66 +91,50 @@ abstract class BaseField{
     }
     
     public function getDispatcher(){
-        return $this->obFieldDispatcher;
+        return $this->fieldDispatcher;
     }
     
-    public function setDispatcher(BaseFieldDispatcher $obFieldDispatcher){
-        $this->obFieldDispatcher = $obFieldDispatcher;
+    public function setDispatcher(BaseFieldDispatcher $fieldDispatcher){
+        $this->fieldDispatcher = $fieldDispatcher;
         
         return $this;
     }
     
-    public function validate($value, BaseResult $obResult){
-        $isValid = true;
-        
+    public function validate($value, $result){
+        if($value instanceof Expr){
+			return true;
+		}
+
+        $validators = [];
+
         if($this->required){
-            if(is_array($value)){
-                $isValid = false;
-                
-                foreach($value AS $v){
-                    if(strlen($v)){
-                        $isValid = true;
-                        break;
-                    }
+            $validators[] = new ValidateRequired;
+        }
+
+        $validate = $this->validate;
+
+        if(is_callable($validate)){
+            $validators = array_merge($validators, $validate());
+        }
+
+        if($this->disabled && $value !== null){
+            return new Error($this->name, "Поле предназначено только для просмотра", Error::ERROR_INVALID);
+        }
+
+        $manager = $this->fieldDispatcher->getQuery()->getManager();
+
+        foreach($validators AS $key => $validator){
+            if($validator instanceof IValidate && (($validateError = $validator->validate($value, $this->name, $result, $manager)) !== true)){
+                return $validateError;
+            }else if(is_callable($validator) && (($validateError = $validator($value, $this->name, $result, $manager)) !== true)){
+                if($validateError instanceof Error){
+                    return $validateError;
+                }else{
+                    return new Error($this->name, (is_string($validateError) ? $validateError : "Неверное значение поля"), is_numeric($key) ? Error::ERROR_INVALID : $key) ;
                 }
-            }else if(!$value instanceof Expr){
-                $isValid = strlen($value) > 0;
-            }
-            
-            if(!$isValid){
-                return new Error($this->name, "Поле является обязательным для заполнения", Error::ERROR_REQUIRED);
             }
         }
 
-        if($isValid && is_callable($this->validate)){
-            $validate       = $this->validate;
-            $pk             = $this->getDispatcher()->getBuilder()->getEntity()->getPk();
-            $arValidators   = $validate();
-            
-            if(is_array($arValidators)){
-                foreach($arValidators AS $key => $validator){
-                    if($validator instanceof Validate\IValidate){
-                        if(($validateResult = $validator->validate($obResult, $this)) !== true){
-                            return $validateResult;
-                        }
-                    }else if(is_callable($validator)){
-                        if(($validateResult = $validator($obResult, $this)) !== true){
-                            if(!$validateResult instanceof Error){
-                                $error = is_numeric($key) ? Error::ERROR_INVALID : $key;
-                                $validateResult = new Error($this->name, "Неверное значение поля", $error);
-                            }
-                            
-                            return $validateResult;
-                        }
-                    }else if(is_string($validator) && !preg_match($validator, $value)){
-                        $error = is_numeric($key) ? Error::ERROR_INVALID : $key;
-                        return new Error($this->name, "Неверное значение поля", $error);
-                    }
-                }
-            }
-        }
-        
-        return $isValid;
+        return true;
     }
 }
-?>

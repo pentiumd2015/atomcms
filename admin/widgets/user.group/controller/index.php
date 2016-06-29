@@ -1,39 +1,39 @@
 <?
-$listURL    = $this->getParam("listURL");
-$addURL     = $this->getParam("addURL");
-$editURL    = $this->getParam("editURL");
+$route = CAtom::$app->route;
 
-$obRoute    = $this->app("route");
-$fileName   = false;
+$addPattern     = "add";
+$editPattern    = "{ID}";
 
-switch($obRoute->path){
-    case $listURL:
-        $fileName = "list.php";
-        break;
-    case $addURL:
-        $fileName = "add.php";
-        break;
-    case $editURL:
-        $fileName = "edit.php";
-        break;
-    default:
-        $fileName = false;
-        break;
+$this->varValues  = [];
+$this->mode       = null;
+
+if($route->query){
+    $routes = [
+        "add"   => ["pattern" => $addPattern],
+        "edit"  => [
+            "pattern"   => $editPattern, 
+            "varParams" => [
+                "ID" => "^\d+$"
+            ]
+        ]
+    ];
+    
+    if(($values = $route->getMatch($routes)) !== false){
+        $this->mode         = $values["mode"];
+        $this->varValues    = $values["varValues"];
+    }
+}else{
+    $this->mode = "list";
 }
 
 $filePath = __DIR__ . "/include/";
 
-if($fileName && is_file($filePath . $fileName)){
-    include($filePath . $fileName);
+if($this->mode && is_file($filePath . $this->mode . ".php")){
+    $this->setParam("listUrl", $route->path);
+    $this->setParam("addUrl", $route->path . $addPattern);
+    $this->setParam("editUrl", $route->path . $editPattern);
+
+    include($filePath . $this->mode . ".php");
 }else{
     CEvent::trigger("404");
 }
-?>
-
-<?php 
-
-?>
-
-<?php 
-
-?>

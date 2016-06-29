@@ -1,154 +1,66 @@
 <?
+namespace Helpers;
+
 class CArrayHelper{
-    static public function walk(array &$arData, $callback){
-        if(is_callable($callback)){
-            foreach($arData AS &$value){
-                $value = $callback($value);
+    public static function replace(){
+        $result = [];
+        
+        foreach(func_get_args() AS $data){
+            if(!is_array($data)){
+                return null;
             }
             
-            unset($value);
-        }
-        
-        return true;
-    }
-    
-    static public function map(array $arData, $callback){
-        return array_map($callback, $arData);
-    }
-    
-    static public function replace(){
-        $arResult = array();
-        
-        foreach(func_get_args() AS $arData){
-            if(!is_array($arData)){
-                return NULL;
-            }
-            
-            foreach($arData AS $key => $value){
-                $arResult[$key] = $value;
+            foreach($data AS $key => $value){
+                $result[$key] = $value;
             }
         }
         
-        return $arResult;
+        return $result;
     }
-    
-    /**
-     * $array = [
-     *     ['id' => '123', 'data' => 'abc'],
-     *     ['id' => '345', 'data' => 'def'],
-     * ];
-     * $result = CArrayHelper::getColumn($array, 'id');
-     * // the result is: ['123', '345']
-     *
-     */
-    static public function getColumn(array $arData, $key){
-        if(strpos($key, ".") === false){
-            $arResult = array();
-    
-    		foreach($arData AS $value){
-                if(isset($value[$key])){
-                    $arResult[] = $value[$key];
-                }
-    		}
-    
-    		$arData = $arResult;
-        }else{
-            foreach(explode(".", $key) AS $itemKey){
-        		$arResult = array();
-        
-        		foreach($arData AS $value){
-                    if(isset($value[$itemKey])){
-                        $arResult[] = $value[$itemKey];
-                    }
-        		}
-        
-        		$arData = $arResult;
-        	}
+
+    public static function getColumn(array $data, $key){
+        $result = [];
+
+        foreach($data AS $value){
+            $result[] = $value[$key];
         }
     	
-    	return $arResult;
+    	return $result;
     }
-    
-    /**
-     * $array = [
-     *     ['id' => '123', 'data' => 'abc'],
-     *     ['id' => '345', 'data' => 'def'],
-     * ];
-     * $result = CArrayHelper::index($array, 'id');
-     * // the result is:
-     * // [
-     * //     '123' => ['id' => '123', 'data' => 'abc'],
-     * //     '345' => ['id' => '345', 'data' => 'def'],
-     * // ]
-     */
-    static public function index(array $arData, $key, $mergeOnDuplicate = false){
-        $arResult   = array();
-        $arItem     = reset($arData);
-        
-        if(is_array($arItem)){
-            if(strpos($key, ".") === false){
-                if($mergeOnDuplicate){
-            		foreach($arData AS $value){
-                        if(isset($value[$key])){
-                            $arResult[$value[$key]][] = $value;            
-                        }
-            		}
-                }else{
-            		foreach($arData AS $value){
-                        if(isset($value[$key])){
-                            $arResult[$value[$key]] = $value;            
-                        }
-            		}
-                }
-            }else{
-                if($mergeOnDuplicate){
-                    foreach(explode(".", $key) AS $itemKey){
-                		$arResult = array();
-        
-                		foreach($arData AS $value){
-                            if(isset($value[$itemKey])){
-                                $arResult[$value[$itemKey]][] = $value;            
-                            }
-                		}
-                
-                		$arData = $arResult;
-                	}
-                }else{
-                    foreach(explode(".", $key) AS $itemKey){
-                		$arResult = array();
-        
-                		foreach($arData AS $value){
-                            if(isset($value[$itemKey])){
-                                $arResult[$value[$itemKey]] = $value;            
-                            }
-                		}
-                
-                		$arData = $arResult;
-                	}
-                }
+
+    public static function index(array $data, $key, $mergeOnDuplicate = false){
+        $result = [];
+
+        if($mergeOnDuplicate){
+            foreach($data AS $value){
+                $result[$value[$key]][] = $value;
+            }
+        }else{
+            foreach($data AS $value){
+                $result[$value[$key]] = $value;
             }
         }
     
-    	return $arResult;
+    	return $result;
     }
     
-    static public function isAssoc(array $arData){
-        return array_values($arData) !== $arData;
+    public static function isAssoc(array $data){
+        return array_values($data) !== $data;
     }
     
-    static public function export(array $arData, $tab = "    ", $depth = 0){
+    public static function export(array $data, $tab = "    ", $depth = 0){
         $str = "array(\n";
         
-        if(is_array($arData)){
+        if(is_array($data)){
             $nextDepthWS = str_repeat($tab, $depth + 1);
             
-            $isAssoc = static::isAssoc($arData);
+            $isAssoc = static::isAssoc($data);
             
-            $count = count($arData);
+            $count = count($data);
             
             $i = 0;
             
-            foreach($arData AS $key => $value){
+            foreach($data AS $key => $value){
                 $str.= $nextDepthWS;
                 
                 if($isAssoc){
@@ -182,22 +94,19 @@ class CArrayHelper{
         return $str;
     }
     
-    static public function getKeyValue(array $arData, $key, $value){
-        $arResult = array();
-        
-        if(count($arData)){
-            if($key === false || $key == null){ //if key already indexed
-                foreach($arData AS $key => $arItem){
-                    $arResult[$key] = $arItem[$value];
-                }
-            }else{
-                foreach($arData AS $arItem){
-                    $arResult[$arItem[$key]] = $arItem[$value];
-                }
+    public static function map(array $data, $key = null, $value){
+        $result = [];
+
+        if($key === null){ //if key already indexed
+            foreach($data AS $key => $item){
+                $result[$key] = $item[$value];
+            }
+        }else{
+            foreach($data AS $item){
+                $result[$item[$key]] = $item[$value];
             }
         }
         
-        return $arResult;
+        return $result;
     }
 }
-?>

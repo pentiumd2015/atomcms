@@ -1,10 +1,10 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \Entity\Field\Renderer\TextRenderer;
+use Entity\Field\Renderer\TextRenderer;
 
 class TextField extends ScalarField{
-    protected $arInfo = [
+    protected $info = [
         "title" => "Текст"
     ];
     
@@ -12,12 +12,11 @@ class TextField extends ScalarField{
         return new TextRenderer($this);
     }
     
-    public function filter($value, \Entity\Builder $obBuilder){
-        $table = $this->getEntity()->getTableName();
-        
+    public function filter($value){
         if(is_scalar($value) && strlen($value)){
-            $obBuilder->where($table . "." . $this->name, "LIKE", "%" . $value . "%");
+            $this->getDispatcher()
+                 ->getQuery()
+                 ->where($this->name, "LIKE", "%" . $value . "%");
         }
     }
 }
-?>

@@ -1,4 +1,5 @@
 <?
+
 class CCookie{
     const EXPIRE    = "expire";
     const DOMAIN    = "domain";
@@ -49,4 +50,3 @@ class CCookie{
         return $_COOKIE ? $_COOKIE : false ;
     }
 }
-?>

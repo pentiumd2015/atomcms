@@ -11,5 +11,10 @@ class Expr{
     public function getValue(){
         return $this->value;
     }
+    
+    public function setValue($value){
+        $this->value = $value;
+        
+        return $this;
+    }
 }
-?>

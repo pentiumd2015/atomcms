@@ -1,113 +1,115 @@
 <?
-use \DB\Connection;
-use \DB\Builder AS DbBuilder;
+use DB\Query AS DbQuery;
 
-use \Entity\Field\Scalar\IntegerField;
-use \Entity\Field\Scalar\StringField;
-use \Entity\Field\Scalar\BooleanField;
-use \Entity\Field\Scalar\DateTimeField;
-use \Entity\Field\Scalar\PasswordField;
-use \Entity\Field\Scalar\ListField;
+use Entity\Field\Scalar\IntegerField;
+use Entity\Field\Scalar\StringField;
+use Entity\Field\Scalar\BooleanField;
+use Entity\Field\Scalar\DateTimeField;
+use Entity\Field\Scalar\PasswordField;
+use Entity\Field\Scalar\ListField;
 
-use \Entity\Field\Validate\Unique as ValidateUnique;
-use \Entity\Field\Validate\Length as ValidateLength;
-use \Entity\Field\Validate\Email as ValidateEmail;
+use DB\Manager\Validate\Unique as ValidateUnique;
+use DB\Manager\Validate\Length as ValidateLength;
+use DB\Manager\Validate\Email as ValidateEmail;
 
-use \Entity\Field\Custom\UserGroupField;
-use \Entity\Field\Custom\RelationField;
+use Entity\Field\Custom\UserGroupField;
 
-use \DB\Expr;
+use DB\Expr;
+use Helpers\CArrayHelper;
 
-class CUser extends \Entity\Entity{
-    static protected $_table    = "user";
-    static protected $_pk       = "id";
+class CUser extends Entity\Manager{
+    protected static $tableName = "user";
     
-    static protected $arInfo = array(
+    protected static $info = [
         "title" => "Пользователи"
-    );
+    ];
     
-    static protected $arEvents = array(
+    protected static $events = [
         "ADD"       => "USER.ADD",
         "UPDATE"    => "USER.UPDATE",
         "DELETE"    => "USER.DELETE",
-    );
+    ];
     
-    protected $arData = array();
+    protected $data = [];
     
     const GROUP_VALUE_TABLE = "user_group_value";
-    
+
+    public static function groupValueQuery(){
+        return (new DbQuery)->from(self::GROUP_VALUE_TABLE);
+    }
+
     public function getFields(){
-        return array(
-            new IntegerField("id", array(
+        return [
+            new IntegerField("id", [
                 "title"         => "ID",
-                "required"      => true,
                 "primary"       => true,
                 "disabled"      => true,
                 "description"   => "Идентификатор пользователя"
-            )),
-            new StringField("login", array(
+            ]),
+            new StringField("login", [
                 "title"         => "Логин",
                 "required"      => true,
                 "description"   => "Логин пользователя используется при авторизации на сайте",
                 "validate"      => function(){
-                    return array(
+                    return [
                         new ValidateUnique(),
                         new ValidateLength(6, 40)
-                    );
+                    ];
                 }
-            )),
-            new PasswordField("password", array(
+            ]),
+            new PasswordField("password", [
                 "title"     => "Пароль",
                 "required"  => true,
-                "algorithm" => array($this, "getHash"),
+                "algorithm" => [$this, "getHash"],
                 "validate"  => function(){
-                    return array(
+                    return [
                         new ValidateLength(6, 40)
-                    );
+                    ];
                 }
-            )),
-            new StringField("fio", array(
+            ]),
+            new StringField("fio", [
                 "title" => "ФИО"
-            )),
-            new StringField("email", array(
+            ]),
+            new StringField("email", [
                 "title"     => "E-mail",
                 "validate"  => function(){
-                    return array(
+                    return [
                         new ValidateEmail()
-                    );
+                    ];
                 }
-            )),
-            new ListField("gender", array(
+            ]),
+            new ListField("gender", [
                 "title"     => "Пол",
-                "values"    => array(
+                "values"    => [
                     "0" => "Не выбран",
                     "M" => "Мужской",
                     "W" => "Женский"
-                )
-            )),
-            new BooleanField("active", array(
+                ]
+            ]),
+            new BooleanField("active", [
                 "title" => "Активность"
-            )),
-            new DateTimeField("date_add", array(
+            ]),
+            new DateTimeField("date_add", [
                 "title"     => "Дата добавления",
                 "disabled"  => true
-            )),
-            new DateTimeField("date_update", array(
+            ]),
+            new DateTimeField("date_update", [
                 "title"     => "Дата обновления",
                 "disabled"  => true
-            )),
-            new UserGroupField("group", array(
+            ]),
+            new UserGroupField("group", [
                 "title" => "Группа пользователей",
-                "values"=> function($obField){
-                    $arGroups = CUserGroup::builder()->select(["id", "title"])->fetchAll();
-                    return CArrayHelper::getKeyValue($arGroups, "id", "title");
+                "required" => true,
+                "values"=> function($field){
+                    $groups = CUserGroup::query()->select(["id", "title"])->fetchAll();
+                    return CArrayHelper::map($groups, "id", "title");
                 }
-            ))
-        );
+            ])
+        ];
     }
     
-    public function onBeforeAdd($obResult){
-        $obResult->setDataValues([
+    public function onBeforeAdd($result){
+        $result->setDataValues([
             "date_add"      => new Expr("NOW()"),
             "date_update"   => new Expr("NOW()")
         ]);
@@ -115,8 +117,8 @@ class CUser extends \Entity\Entity{
         return true;
     }
     
-    public function onBeforeUpdate($obResult, $id){
-        $obResult->setDataValues([
+    public function onBeforeUpdate($result){
+        $result->setDataValues([
             "date_update" => new Expr("NOW()")
         ]);
 
@@ -124,43 +126,41 @@ class CUser extends \Entity\Entity{
     }
     
     public function auth($login, $password, $rememberMe = false){
-        $arUser = static::builder()->where("login", $login)
-                                   ->where("active", 1)
-                                   ->limit(1)
-                                   ->fetch();
+        $user = static::query()->where("login", $login)
+                               ->where("active", 1)
+                               ->limit(1)
+                               ->fetch();
         
-        if($arUser && $arUser["password"] == self::getHash($password)){
-            return $this->_auth($arUser, $rememberMe);
+        if($user && $user["password"] == self::getHash($password)){
+            return $this->_auth($user, $rememberMe);
         }
         
         return false;
     }
     
-    public function authByID($userID, $rememberMe = false){
-        $arUser = static::builder()->where(static::getPk(), $userID)
-                                   ->where("active", 1)
-                                   ->fetch();
+    public function authById($userID, $rememberMe = false){
+        $user = static::query()->where(static::getPk(), $userID)
+                               ->where("active", 1)
+                               ->fetch();
         
-        return $this->_auth($arUser, $rememberMe);
+        return $this->_auth($user, $rememberMe);
     }
     
     public function authByHash($hash){
-        $obBuilder = new DbBuilder;
-        
-        $arPermanentHash = $obBuilder->select("user_id", "last_auth")
+        $permanentHash = (new DbQuery)->select("user_id", "last_auth")
                                      ->from("user_permanent_auth")
                                      ->where("hash", $hash)
                                      ->limit(1)
                                      ->fetch();
         
-        if($arPermanentHash){ //TO DO check date expire
-            $arUser = static::builder()->where(static::getPk(), $arPermanentHash["user_id"])
+        if($permanentHash){ //TO DO check date expire
+            $user = static::query()->where(static::getPk(), $permanentHash["user_id"])
                                        ->where("active", 1)
                                        ->fetch();
         }
 
-        if($arUser){ //check on expire
-            return $this->_auth($arUser, true);
+        if($user){ //check on expire
+            return $this->_auth($user, true);
         }else{
             return $this->destroyPermanentSession();
         }
@@ -170,10 +170,9 @@ class CUser extends \Entity\Entity{
         $hash = CCookie::get("uidHash");
         
         if($hash){
-            $obBuilder = new DbBuilder;
-            $obBuilder->from("user_permanent_auth")
-                      ->where("hash", $hash)
-                      ->delete();
+            (new DbQuery)->from("user_permanent_auth")
+                         ->where("hash", $hash)
+                         ->delete();
             
             CCookie::set("uidHash", "", time() - 1);
         }
@@ -185,45 +184,41 @@ class CUser extends \Entity\Entity{
         return md5(uniqid("t_", true));
     }
     
-    protected function _auth(array $arUser = array(), $rememberMe = false){
-        $this->arData   = $arUser;
-        $obGroupBuilder = CUserGroup::builder();
-        
-        $userID = isset($arUser[static::getPk()]) ? $arUser[static::getPk()] : null ;
+    protected function _auth(array $user = [], $rememberMe = false){
+        $this->data = $user;
+        $userID     = isset($user[static::getPk()]) ? $user[static::getPk()] : null ;
 
-        if($userID && count($arUser["groups"])){
-            $arGroups = $obGroupBuilder->whereIn(CUserGroup::getPk(), $arUser["groups"])
-                                       ->fetchAll();
+        if($userID && count($user["groups"])){
+            $groups = CUserGroup::query()->whereIn(CUserGroup::getPk(), $user["groups"])
+                                           ->fetchAll();
 
-            $this->arData["groups"] = CArrayHelper::index($arGroups, "alias");
+            $this->data["groups"] = CArrayHelper::index($groups, "code");
             
             if($rememberMe){
-                $obBuilder  = new DbBuilder;
-                
-                $arPermanentAuth = $obBuilder->select("last_auth", "hash")
+                $permanentAuth = (new DbQuery)->select("last_auth", "hash")
                                              ->from("user_permanent_auth")
                                              ->where("user_id", $userID)
                                              ->limit(1)
                                              ->fetch();
                 
-                $obBuilder  = new DbBuilder;
-                $obBuilder->from("user_permanent_auth");
+                $query = new DbQuery;
+                $query->from("user_permanent_auth");
                                             
-                if($arPermanentAuth){
-                    $permanentHash = $arPermanentAuth["hash"];
+                if($permanentAuth){
+                    $permanentHash = $permanentAuth["hash"];
                     
-                    $obBuilder->where("user_id", $userID)
-                              ->update(array(
-                                "last_auth" => new Expr("NOW()")
-                              ));
+                    $query->where("user_id", $userID)
+                          ->update([
+                            "last_auth" => new Expr("NOW()")
+                          ]);
                 }else{
                     $permanentHash = static::getPermanentHash();
                     
-                    $obBuilder->insert(array(
+                    $query->insert([
                         "user_id"   => $userID,
                         "hash"      => $permanentHash,
                         "last_auth" => new Expr("NOW()")
-                    ));
+                    ]);
                 }
                 
                 $expire = time() + 60 * 60 * 24 * 365; //1 year
@@ -231,22 +226,22 @@ class CUser extends \Entity\Entity{
                 CCookie::set("uidHash", $permanentHash, $expire);
             }
         }else{
-            $arGroup = $obGroupBuilder->where("alias", CUserGroup::ALIAS_UNAUTHORISED)
-                                      ->limit(1)
-                                      ->fetch();
+            $group = CUserGroup::query()->where("code", CUserGroup::CODE_UNAUTHORISED)
+                                        ->limit(1)
+                                        ->fetch();
 
-            if($arGroup){
-                $this->arData["groups"] = array($arGroup["alias"] => $arGroup);
+            if($group){
+                $this->data["groups"] = [$group["code"] => $group];
             }
         }
         
-        CAtom::$app->session->set("user_session", $this->arData);
+        CAtom::$app->session->set("user_session", $this->data);
 
         return true;
     }
     
     public function getData(){
-        return $this->arData;
+        return $this->data;
     }
 
     public function identify(){
@@ -261,13 +256,13 @@ class CUser extends \Entity\Entity{
                 $this->authByHash($hash); //else auth by hash
             }
         }else{
-            $this->arData = $data;
+            $this->data = $data;
         }
 
         return $this;
     }
     
-    static public function getHash($password){
+    public static function getHash($password){
         return sha1($password);
     }
     
@@ -277,13 +272,13 @@ class CUser extends \Entity\Entity{
         return true;
     }
     
-    public function hasGroup($groupAlias){
-        if(!is_array($groupAlias)){
-            $groupAlias = array($groupAlias);
+    public function hasGroup($groupCode){
+        if(!is_array($groupCode)){
+            $groupCode = [$groupCode];
         }
         
-        foreach($groupAlias AS $alias){
-            if(isset($this->arData["groups"][$alias])){
+        foreach($groupCode AS $code){
+            if(isset($this->data["groups"][$code])){
                 return true;
             }
         }
@@ -292,89 +287,79 @@ class CUser extends \Entity\Entity{
     }
     
     public function isAdmin(){
-        return $this->is(CUserGroup::ALIAS_ADMIN);
+        return $this->is(CUserGroup::CODE_ADMIN);
     }
     
-    public function is($groupAlias){
-        return $this->hasGroup($groupAlias);
+    public function is($groupCode){
+        return $this->hasGroup($groupCode);
     }
     
     public function isAuth(){
-        return $this->getID() ? true : false ;
+        return $this->getId() ? true : false ;
     }
     
-    public function getID(){
+    public function getId(){
         $pk = static::getPk();
-        return isset($this->arData[$pk]) ? $this->arData[$pk] : false ;
+        return isset($this->data[$pk]) ? $this->data[$pk] : false ;
     }
     
-    public function can($accessRule){
+    public function can($accessCode){
         if($this->isAdmin()){
             return true;
         }
         
-        if(!isset($this->arData["access"]) && is_array($this->arData["groups"])){
-            $arUserGroupIDs = CArrayHelper::getColumn($this->arData["groups"], CUserGroup::getPk());
-            
-            $arAccess = array();
-            
-            if(count($arUserGroupIDs)){
-                $arGroupAccess = CUserGroupAccess::getGroupAccess($arUserGroupIDs);
-                
-                foreach($arGroupAccess AS $userGroupID => $arGroupAccessItem){
-                    foreach($arGroupAccessItem AS $accessAlias => $arAccessItem){
-                        $arAccess[$accessAlias] = $arAccessItem;
-                    }
+        if(!isset($this->data["access"])){
+            $userGroupIds = CArrayHelper::getColumn($this->data["groups"], "id");
+
+            $access = [];
+
+            if(count($userGroupIds)){
+                $userGroupAccesses = CModuleAccess::valueQuery()->select("av.user_group_id", "a.*")
+                                                                ->alias("av")
+                                                                ->join(CModuleAccess::getTableName() . " AS a", "a.id", "av.module_access_id")
+                                                                ->whereIn("user_group_id", $userGroupIds)->fetchAll();
+
+                foreach($userGroupAccesses AS $userGroupAccess){
+                    $access[$userGroupAccess["code"]] = $userGroupAccess;
                 }
             }
-            
-            $this->arData["access"] = $arAccess;
+
+            $this->data["access"] = $access;
         }
-        
-        return isset($this->arData["access"][$accessRule]);
+
+        return isset($this->data["access"][$accessCode]);
     }
     
-    static public function setGroups($userID, array $arGroupIDs = array()){
-        $obBuilder  = new DbBuilder;
-        
-        if(!is_array($userID)){
-            $arUserIDs = array($userID);
-        }else{
-            $arUserIDs = $userID;
-        }
-        
-        $obBuilder->from(self::GROUP_VALUE_TABLE)
-                  ->whereIn("user_id", $arUserIDs);
-        
-        if(count($arGroupIDs)){
-            $obBuilder->whereNotIn("user_group_id", $arGroupIDs);
-        }
-        
-        $obBuilder->delete();
+    static public function setGroups($userID, array $groupIDs = []){ 
+        $userIDs = !is_array($userID) ? [$userID] : $userID ;
 
-        if(count($arGroupIDs)){
-            $obBuilder = new DbBuilder;
+        $query = static::groupValueQuery()->whereIn("user_id", $userIDs);
+        
+        if(count($groupIDs)){
+            $query->whereNotIn("user_group_id", $groupIDs);
+        }
+       
+        $query->delete();
+
+        if(count($groupIDs)){
+            $tmpUserGroupValues = static::groupValueQuery()->whereIn("user_id", $userIDs)->fetchAll();
             
-            $arTmpUserGroupValues = $obBuilder->from(self::GROUP_VALUE_TABLE)
-                                              ->whereIn("user_id", $arUserIDs)
-                                              ->fetchAll();
+            $userGroupValues = [];
             
-            $arUserGroupValues = array();
-            
-            foreach($arTmpUserGroupValues AS $arUserGroupValue){
-                $hash                       = $arUserGroupValue["user_id"] . ":" . $arUserGroupValue["user_group_id"];
-                $arUserGroupValues[$hash]   = $arUserGroupValue;
+            foreach($tmpUserGroupValues AS $userGroupValue){
+                $hash                   = $userGroupValue["user_id"] . ":" . $userGroupValue["user_group_id"];
+                $userGroupValues[$hash] = $userGroupValue;
             }
             
-            $obBuilder = new DbBuilder;
-            $obBuilder->from(self::GROUP_VALUE_TABLE);
+            $query = new DbQuery;
+            $query->from(self::GROUP_VALUE_TABLE);
             
-            foreach($arGroupIDs AS $userGroupID){
-                foreach($arUserIDs AS $userID){
+            foreach($groupIDs AS $userGroupID){
+                foreach($userIDs AS $userID){
                     $hash = $userID . ":" . $userGroupID;
                     
-                    if(!isset($arUserGroupValues[$hash])){
-                        $obBuilder->insert(array(
+                    if(!isset($userGroupValues[$hash])){
+                        $query->insert(array(
                             "user_id"       => $userID,
                             "user_group_id" => $userGroupID
                         ));
@@ -384,4 +369,3 @@ class CUser extends \Entity\Entity{
         }
     }
 }
-?>

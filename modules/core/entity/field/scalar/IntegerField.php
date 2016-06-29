@@ -1,13 +1,13 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \Helpers\CArrayHelper;
+use Helpers\CArrayHelper;
 use Entity\Field\Renderer\NumericRenderer;
 
 class IntegerField extends Field{
-    protected $arInfo = array(
+    protected $info = [
         "title" => "Целое число"
-    );
+    ];
     
     public function getRenderer(){
         return new NumericRenderer($this);
@@ -15,7 +15,7 @@ class IntegerField extends Field{
     
     public function filter($value){
         if(is_scalar($value) && strlen($value)){
-            $obBuilder = $this->getDispatcher()->getBuilder();
+            $query = $this->getDispatcher()->getQuery();
             $fieldName = $this->getName();
             
             if(strpos($value, "-") !== false){
@@ -31,24 +31,23 @@ class IntegerField extends Field{
                         $idFrom = $tmpID;
                     }
                     
-                    $obBuilder->where(function($obSubBuilder) use($fieldName, $idFrom, $idTo){
-                        $obSubBuilder->where($fieldName, ">=", $idFrom)
-                                     ->where($fieldName, "<=", $idTo);
+                    $query->where(function($subQuery) use($fieldName, $idFrom, $idTo){
+                        $subQuery->where($fieldName, ">=", $idFrom)
+                                 ->where($fieldName, "<=", $idTo);
                     });
                 }else if($lFrom){
-                    $obBuilder->where($fieldName, ">=", $idFrom);
+                    $query->where($fieldName, ">=", $idFrom);
                 }else if($lTo){
-                    $obBuilder->where($fieldName, "<=", $idTo);
+                    $query->where($fieldName, "<=", $idTo);
                 }
             }else if(strpos($value, ";") !== false){
-                $arItemIDs = explode(";", $value);
-                $arItemIDs = CArrayHelper::map($arItemIDs, "trim");
+                $itemIDs = explode(";", $value);
+                $itemIDs = CArrayHelper::map($itemIDs, "trim");
 
-                $obBuilder->whereIn($fieldName, $arItemIDs);
+                $query->whereIn($fieldName, $itemIDs);
             }else if($value){
-                $obBuilder->where($fieldName, $value);
+                $query->where($fieldName, $value);
             }
         }
     }
 }
-?>

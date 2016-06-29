@@ -1,52 +1,71 @@
 <?
 use Entity\Display;
-use Helpers\CPagination;
+use Data\QueryDataSource;
 
-$userID = CAtom::$app->user->getID();
+$addUrl     = $this->getParam("addUrl");
+$editUrl    = $this->getParam("editUrl");
+$listUrl    = $this->getParam("listUrl");
 
-/*Apply Request Group*/
-if(isset($_REQUEST["group"]) && $_REQUEST["checkbox_item"]){
-    $arGroupItems = $_REQUEST["checkbox_item"];
+$request = CAtom::$app->request;
 
-    if(is_array($arGroupItems)){
-        switch($_REQUEST["group"]){
+$groupOperation = $request->get("group");
+$groupItems     = $request->get("checkbox_item", []);
+
+/*Apply group operations*/
+if($groupOperation && count($groupItems)){
+    if(($index = array_search(1, $groupItems)) !== false){ //if admin
+        unset($groupItems[$index]);
+    }
+
+    if(count($groupItems)){
+        switch($groupOperation){
             case "activate":
-                CUser::updateAll($arGroupItems, ["active" => 1]);
+                CUser::updateAll($groupItems, ["active" => 1]);
                 break;
             case "deactivate":
-                CUser::updateAll($arGroupItems, ["active" => 0]);
+                CUser::updateAll($groupItems, ["active" => 0]);
                 break;
             case "delete":
-                CUser::deleteAll($arGroupItems);
+                CUser::deleteAll($groupItems);
                 break;
         }
     }
 }
-/*Apply Request Group*/
-$obUser                 = new CUser;
-$obDisplay              = new Display($obUser);
-$obPagination           = new CPagination(isset($_GET["page"]) ? (int)$_GET["page"] : 1, (isset($_GET["perPage"]) ? (int)$_GET["perPage"] : 20));
+/*Apply group operations*/
 
-$arDisplayListFields    = $obDisplay->getDisplayListFields($userID);
+$userId = CAtom::$app->user->getId(); //current user
+$user   = new CUser;
 
-$arUsers = $obUser->search([
-    "filter"        => isset($_GET["f"]) ? $_GET["f"] : [],
-    "sort"          => [isset($_GET["sort"]) ? $_GET["sort"] : "id" => isset($_GET["by"]) ? $_GET["by"] : "ASC"],
-    "pagination"    => $obPagination,
-    "select"        => array_keys($arDisplayListFields)
+$filterData = $request->get("f", []);
+
+$query = $user->search([
+    "filter"=> $filterData,
+    "sort"  => [$request->get("sort", $user->getPk()) => $request->get("by", "DESC")]
 ]);
 
-$entityName = $obUser->getEntityName();
+$display = new Display($user);
+
+$dataSource = new QueryDataSource([
+    "query"         => $query,
+    "pagination"    => [
+        "page"      => (int)$request->get("page", 1),
+        "perPage"   => (int)$request->get("perPage", 20)
+    ]
+]);
+
+CBreadcrumbs::add([
+    $listUrl => "Список пользователей"
+]);
 
 $this->setViewData([
-    "listID"                    => $entityName . "_list",
-    "filterID"                  => $entityName . "_filter",
-    "arUsers"                   => $arUsers,
-    "addURL"                    => $addURL,
-    "editURL"                   => $editURL,
-    "obPagination"              => $obPagination,
-    "arDisplayListFields"       => $arDisplayListFields,
-    "arDisplayFilterFields"     => $obDisplay->getDisplayFilterFields($userID),
+    "dataSource"            => $dataSource,
+    "filterData"            => $filterData,
+    "listId"                => $user->getEntityName() . "_list",
+    "filterId"              => $user->getEntityName() . "_filter",
+    "addUrl"                => $addUrl,
+    "editUrl"               => $editUrl,
+    "displayListFields"     => $display->getDisplayListFields($userId),
+    "displayFilterFields"   => $display->getDisplayFilterFields($userId),
 ]);
 
 $this->includeView("list");

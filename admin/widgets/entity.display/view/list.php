@@ -1,27 +1,24 @@
 <?
-if(CHttpRequest::isAjax()){
-    ?>
-        <script type="text/javascript" src="<?=$this->path . "js/list.js";?>"></script>
-        <link href="<?=$this->path . "css/list.css";?>" rel="stylesheet" type="text/css" />
-    <?
-}else{
-    CPage::addJS($this->path . "js/list.js");
-    CPage::addCSS($this->path . "css/list.css");
-}
+use Helpers\CHtml;
+
+$this->view->addJs(BASE_URL . $this->path . "js/list.js");
+$this->view->addCss(BASE_URL . $this->path . "css/list.css");
 ?>
 <div class="row list_settings_container">
     <div class="col-sm-6">
         <h5>Список доступных колонок:</h5>
         <ul class="available_fields_list fields_list connected_sortable">
             <?
-                foreach($obDisplay->getAllVisibleFields() AS $fieldName => $obField){
-                    if(isset($arEntityDisplay[$fieldName])){
+                foreach(array_keys($display->getFieldNames()) AS $fieldName){
+                    if(in_array($fieldName, $displayFields) || !isset($fields[$fieldName])){
                         continue;
                     }
+                    
+                    $field = $fields[$fieldName];
                     ?>
                         <li>
                             <div class="field_drag_handle"><i class="icon-move"></i></div>
-                            <?=$obField->title;?>
+                            <?=$field->title;?>
                             <?=CHtml::hidden("data[][field]", $fieldName);?>
                         </li>
                     <?
@@ -33,16 +30,21 @@ if(CHttpRequest::isAjax()){
         <form class="list_settings_form" method="POST" action="<?=BASE_URL . "ajax/";?>">
             <?=CHtml::hidden("widget", $this->name);?>
             <?=CHtml::hidden("method", "setDisplaySettings");?>
-            <?=CHtml::hidden("entity", $obEntity->getClass());?>
+            <?=CHtml::hidden("entity", $entity->getClass());?>
             <?=CHtml::hidden("type", "list");?>
             <h5>Список выбранных колонок:</h5>
             <ul class="chosen_fields_list fields_list connected_sortable">
                 <?
-                    foreach($arEntityDisplay AS $fieldName => $obField){
+                    foreach($displayFields AS $fieldName){
+                        if(!isset($fields[$fieldName])){
+                            continue;
+                        }
+                        
+                        $field = $fields[$fieldName];
                         ?>
                             <li>
                                 <div class="field_drag_handle"><i class="icon-move"></i></div>
-                                <?=$obField->title;?>
+                                <?=$field->title;?>
                                 <?=CHtml::hidden("data[][field]", $fieldName);?>
                             </li>
                         <?

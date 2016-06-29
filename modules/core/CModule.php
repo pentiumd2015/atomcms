@@ -1,9 +1,9 @@
 <?
-use \DB\Builder;
-use \Helpers\CFile;
-use \CObject;
+use DB\Manager;
 
-class CModule extends CObject{
+class CModule extends Manager{
+    protected static $tableName     = "module";
+    protected static $primaryKey    = "id";
     protected $config    = [];
     protected $modules   = [];
     protected $errors    = [];
@@ -51,7 +51,7 @@ class CModule extends CObject{
             $parentModule = substr($module, 0, -2);
 
             if(($moduleDir = $this->getModuleDir($parentModule))){
-                $obIterator = CFile::scanDirectory(ROOT_PATH . $moduleDir);
+                $obIterator = new \DirectoryIterator(ROOT_PATH . $moduleDir);
                 
                 foreach($obIterator AS $obFileinfo){
                     if($obFileinfo->isDot()){
@@ -87,7 +87,7 @@ class CModule extends CObject{
         }else if(($moduleDir = $this->getModuleDir($module))){
             $files = [
                 $moduleDir . ".php", //если загружаем файл
-                $moduleDir . "/" . $config["autoloadFile"] //если грузим директорию, то подгружаем файл автолоада
+                $moduleDir . "/" . $this->config["autoloadFile"] //если грузим директорию, то подгружаем файл автолоада
             ];
             
             foreach($files AS $moduleFile){
@@ -102,17 +102,13 @@ class CModule extends CObject{
             
             $this->errors[$module] = [
                 "message"       => "File [" . implode("] or [", $files) . "] in module [" . $module . "]",
-                "autoloadFile"  => $moduleDir . "/" . $config["autoloadFile"]
+                "autoloadFile"  => $moduleDir . "/" . $this->config["autoloadFile"]
             ];
         }else{
             $this->errors[$module] = [
                 "message"       => "Module [" . $module . "] not found"
             ];
         }
-    }
-    
-    public function builder(){
-        return (new Builder)->from("module");
     }
 
     public function getModuleDir($module){
@@ -137,4 +133,3 @@ class CModule extends CObject{
         return $this->errors;
     }
 }
-?>

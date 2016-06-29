@@ -1,20 +1,18 @@
 <?
 namespace Entity\Field\Additional;
 
-use \Entity\ExtraField;
-use \Entity\ExtraFieldValue;
+use Entity\Field\Renderer\StringRenderer;
 
 class StringField extends Field{
-    protected $arInfo = array(
+    protected $info = [
         "title" => "Строка"
-    );
+    ];
     
     public function getColumnName(){
         return "value_string";
     }
     
     public function getRenderer(){
-        return new \Entity\Field\Renderer\StringRenderer($this);
+        return new StringRenderer($this);
     }
 }
-?>

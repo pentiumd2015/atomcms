@@ -2,7 +2,7 @@
 namespace Helpers;
 
 class CHtml{
-    static public $arVoidTags = array(
+    public static $voidTags = [
         'area'      => 1,
         'base'      => 1,
         'br'        => 1,
@@ -19,187 +19,212 @@ class CHtml{
         'source'    => 1,
         'track'     => 1,
         'wbr'       => 1,
-    );
-    
-    static public function chars($str){
-       return htmlspecialchars($str, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8", false);
+    ];
+
+    public static function escape($str){
+        /*return strtr($str,  array(
+            "&"     => "&amp;",
+            "<"     => "&lt;",
+            ">"     => "&gt;",
+            "\""    => "&quot;",
+            "'"     => "&#039;"
+        ));*/
+
+
+        return htmlspecialchars($str, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8", false);
     }
     
-    static public function getAttributeString($arAttributes = array()){
+    public static function getAttributeString(array $attributes = []){
         $str = "";
-        
-        if(is_array($arAttributes)){
-            foreach($arAttributes AS $name => $value){
-                $str.= " " . $name . '="' . static::chars($value) . '"';
-            }
+
+        foreach($attributes AS $name => $value){
+            $str.= " " . $name . '="' . static::escape($value) . '"';
         }
         
         return $str;
     }
     
-    static public function tag($tagName, $value = "", $arAttributes = array()){
-        return "<" . $tagName . static::getAttributeString($arAttributes) . ">" . (isset(static::$arVoidTags[strtolower($tagName)]) ? "" : $value . "</" . $tagName . ">") . "\n";
+    public static function tag($tagName, $value = "", $attributes = []){
+        return "<" . $tagName . static::getAttributeString($attributes) . ">" . (isset(static::$voidTags[strtolower($tagName)]) ? "" : $value . "</" . $tagName . ">") . "\n";
     }
         
-    static public function multiselect($fieldName = "", $arData = array(), $arSelected = array(), $arAttributes = array()){        
-        $arAttributes["multiple"] = "multiple";
-        
-        if($fieldName && substr($fieldName, -2) != "[]"){
+    public static function multiselect($fieldName, $data = [], $selectedValues = [], $attributes = []){
+        if(isset($fieldName) && substr($fieldName, -2) != "[]"){
             $fieldName.= "[]";
         }
-        
-        return static::select($fieldName, $arData, $arSelected, $arAttributes);
+
+        $attributes["multiple"] = "multiple";
+
+        return static::select($fieldName, $data, $selectedValues, $attributes);
     }
     
-    static public function select($fieldName = "", $arData = array(), $selectedValue = false, $arAttributes = array()){
-        $arOptionsAttributes = isset($arAttributes["options"]) && is_array($arAttributes["options"]) ? $arAttributes["options"] : array() ;
+    public static function select($fieldName, $data = [], $selectedValue = null, $attributes = []){
+        $optionsAttributes = isset($attributes["options"]) && is_array($attributes["options"]) ? $attributes["options"] : [] ;
         
-        unset($arAttributes["options"]);
-        
-        $arAttributes["name"] = static::chars($fieldName);
-        
-        return static::tag("select", static::getOptionsList($arData, $selectedValue, $arOptionsAttributes), $arAttributes);
-    }
-    
-    static public function radio($fieldName = "", $checked = false, $arAttributes = array()){       
-        $arAttributes["type"] = "radio";
-        $arAttributes["name"] = static::chars($fieldName);
-        $arAttributes["value"]= isset($arAttributes["value"]) ? static::chars($arAttributes["value"]) : 1;
-        
-        if($checked){
-            $arAttributes["checked"] = "checked";
+        unset($attributes["options"]);
+
+        if(isset($fieldName)){
+            $attributes["name"] = $fieldName;
         }
         
-        return static::tag("input", false, $arAttributes);
+        return static::tag("select", static::getOptionsList($data, $selectedValue, $optionsAttributes), $attributes);
     }
     
-    static public function boolean($fieldName = "", $arValues = array(), $checked = false, $arAttributes = array()){
-        $trueValue      = isset($arValues[0]) ? $arValues[0] : 1 ;
-        $falseValue     = isset($arValues[1]) ? $arValues[1] : 0 ;
-        $checked        = (bool)$checked;
+    public static function radio($fieldName, $checked = false, $attributes = []){
+        if(isset($fieldName)){
+            $attributes["name"] = $fieldName;
+        }
+        
+        if($checked){
+            $attributes["checked"] = "checked";
+        }
 
-        $return = static::hidden(static::chars($fieldName), ($checked ? $trueValue : $falseValue));
-        
-        $arAttributes["onchange"] = "$(this).prev().val(this.checked ? \"" . static::chars(CText::escape($trueValue)) . "\" : \"" . static::chars(CText::escape($falseValue)) . "\").trigger(\"change\");";
-        
-        $return.= static::checkbox("", $checked, $arAttributes);
+        $attributes["type"] = "radio";
+
+        return static::tag("input", false, $attributes);
+    }
+    
+    public static function boolean($fieldName, $values = [], $checked = false, $attributes = []){
+        $falseValue             = isset($values[0]) ? $values[0] : 0 ;
+        $attributes["value"]    = isset($values[1]) ? $values[1] : 1 ;
+        $checked                = (bool)$checked;
+
+        $return = static::hidden($fieldName, $falseValue);
+        $return.= static::checkbox($fieldName, $checked, $attributes);
         
         return $return;
     }
     
-    static public function checkbox($fieldName = "", $checked = false, $arAttributes = array()){
-        $arAttributes["type"] = "checkbox";
-        $arAttributes["name"] = static::chars($fieldName);
-        $arAttributes["value"]= isset($arAttributes["value"]) ? static::chars($arAttributes["value"]) : 1;
+    public static function checkbox($fieldName, $checked = false, $attributes = []){
+        if(isset($fieldName)){
+            $attributes["name"] = $fieldName;
+        }
         
         if($checked){
-            $arAttributes["checked"] = "checked";
+            $attributes["checked"] = "checked";
+        }
+
+        $attributes["type"] = "checkbox";
+
+        return static::tag("input", false, $attributes);
+    }
+    
+    public static function hidden($fieldName, $value = "", $attributes = []){
+        if(isset($fieldName)){
+            $attributes["name"] = $fieldName;
+        }
+
+        $attributes["value"]= $value;
+        $attributes["type"] = "hidden";
+
+        return static::tag("input", false, $attributes);
+    }
+    
+    public static function file($fieldName, $attributes = []){
+        if(isset($fieldName)){
+            $attributes["name"] = $fieldName;
+        }
+
+        $attributes["type"] = "file";
+        
+        return static::tag("input", false, $attributes);
+    }
+    
+    public static function button($label = "button", $attributes = []){
+        if(!isset($attributes["type"])){
+            $attributes["type"] = "button";
         }
         
-        return static::tag("input", false, $arAttributes);
+        return static::tag("button", $label, $attributes);
     }
     
-    static public function hidden($fieldName = "", $value = "", $arAttributes = array()){
-        $arAttributes["type"] = "hidden";
-        $arAttributes["name"] = static::chars($fieldName);
-        $arAttributes["value"]= static::chars($value);
+    public static function submit($value = "submit", $attributes = []){
+        $attributes["type"] = "submit";
+        $attributes["value"]= $value;
         
-        if($checked){
-            $arAttributes["checked"] = "checked";
+        return static::tag("input", false, $attributes);
+    }
+    
+    public static function text($fieldName, $value = "", $attributes = []){
+        if(isset($fieldName)){
+            $attributes["name"] = $fieldName;
+        }
+
+        $attributes["type"] = "text";
+        $attributes["value"]= $value;
+        
+        return static::tag("input", false, $attributes);
+    }
+    
+    public static function textarea($fieldName, $value = "", $attributes = []){
+        if(isset($fieldName)){
+            $attributes["name"] = $fieldName;
+        }
+
+        $attributes["value"]= $value;
+        
+        return static::tag("textarea", $value, $attributes);
+    }
+    
+    public static function password($fieldName, $value = "", $attributes = []){
+        if(isset($fieldName)){
+            $attributes["name"] = $fieldName;
+        }
+
+        $attributes["type"] = "password";
+        $attributes["value"]= $value;
+        
+        return static::tag("input", false, $attributes);
+    }
+    
+    public static function a($label = "", $url = null, $attributes = []){
+        if($url){
+            $attributes["href"] = $url;
         }
         
-        return static::tag("input", false, $arAttributes);
+        return static::tag("a", $label, $attributes);
     }
     
-    static public function file($fieldName = "", $arAttributes = array()){
-        $arAttributes["type"] = "file";
-        $arAttributes["name"] = static::chars($fieldName);
+    public static function img($src, $attributes = []){
+        $attributes["src"] = $src;
         
-        return static::tag("input", false, $arAttributes);
+        return static::tag("img", false, $attributes);
     }
     
-    static public function button($label = "button", $arAttributes = array()){
-        if(!isset($arAttributes["type"])){
-            $arAttributes["type"] = "button";
-        }
-        
-        return static::tag("button", $label, $arAttributes);
-    }
-    
-    static public function submit($label = "submit", $arAttributes = array()){
-        $arAttributes["type"] = "submit";
-        $arAttributes["name"] = static::chars($fieldName);
-        $arAttributes["value"]= static::chars($label);
-        
-        return static::tag("input", false, $arAttributes);
-    }
-    
-    static public function text($fieldName = "", $value = "", $arAttributes = array()){
-        $arAttributes["type"] = "text";
-        $arAttributes["name"] = static::chars($fieldName);
-        $arAttributes["value"]= static::chars($value);
-        
-        return static::tag("input", false, $arAttributes);
-    }
-    
-    static public function textarea($fieldName = "", $value = "", $arAttributes = array()){
-        $arAttributes["name"] = static::chars($fieldName);
-        
-        return static::tag("textarea", $value, $arAttributes);
-    }
-    
-    static public function password($fieldName = "", $value = "", $arAttributes = array()){
-        $arAttributes["type"] = "password";
-        $arAttributes["name"] = static::chars($fieldName);
-        $arAttributes["value"]= static::chars($value);
-        
-        return static::tag("input", false, $arAttributes);
-    }
-    
-    static public function a($label = "", $url = "", $arAttributes = array()){
-        $arAttributes["href"] = $url;
-        
-        return static::tag("a", $label, $arAttributes);
-    }
-    
-    static public function img($src, $arAttributes = array()){
-        $arAttributes["src"] = $src;
-        
-        return static::tag("img", false, $arAttributes);
-    }
-    
-    static public function getOptionsList($arData = array(), $selected = false, $arAttributes = array()){
-        if(!is_array($arData)){
+    public static function getOptionsList(array $data = [], $selected = null){
+        if(!is_array($data)){
             return "";
         }
         
         $str = "";
         
         if(!is_array($selected)){
-            $arSelected = array($selected => 1);
+            if($selected !== null){
+                $selected = [$selected => 1];
+            }
         }else{
-            $arSelected = array();
+            $tmpSelected    = $selected;
+            $selected       = [];
             
-            foreach($selected AS $selectedValue){
-                $arSelected[$selectedValue] = 1;
+            foreach($tmpSelected AS $selectedValue){
+                $selected[$selectedValue] = 1;
             }
         }
         
-        foreach($arData AS $value => $title){
-            $attributes = "";
+        foreach($data AS $value => $title){
+            $attributesString = "";
 
-            if(isset($arSelected[$value])){
-                $arAttributes[$value]["selected"] = "selected";
+            if(isset($selected[$value])){
+                $attributes[$value]["selected"] = "selected";
             }
             
-            if(isset($arAttributes[$value]) && is_array($arAttributes[$value])){
-                $attributes = static::getAttributeString($arAttributes[$value]);    
+            if(isset($attributes[$value]) && is_array($attributes[$value])){
+                $attributesString = static::getAttributeString($attributes[$value]);
             }
             
-            $str.= "<option" . $attributes . " value=\"" . static::chars($value) . "\">" . static::chars($title) . "</option>\n";
+            $str.= '<option' . $attributesString . ' value="' . static::escape($value) . '">' . static::escape($title) . '</option>\n';
         }
         
         return $str;
     }
 }
-?>

@@ -86,7 +86,7 @@ function CModal(options){
                 }
             }
         }
-        
+
         this.$element.css("z-index", maxIndex + 2);
         
         this.$overlay = $(options.overlay);
@@ -119,7 +119,7 @@ function CModal(options){
                         }
                         
                         $this.$element.css("display", "table");
-                        
+
                         options.onShown.call($this);
                     }
                 }

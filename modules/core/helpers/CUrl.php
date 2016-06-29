@@ -1,4 +1,6 @@
 <?
+namespace Helpers;
+
 class CUrl{
     public static function to($url = null, array $params = []){
         $queryParams = "";

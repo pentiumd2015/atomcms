@@ -4,35 +4,35 @@
         this.editTabModal;
         this.addFieldModal;
         
-        this.setFields = function(arFields){
-            this.arFields = arFields;
+        this.setFields = function(fields){
+            this.fields = fields;
         }
         
         this.getFields = function(){
-            return this.arFields;
+            return this.fields;
         }
         
         this.getAvaliableFields = function(){
-            var arAvailable = [];
+            var available = [];
             
-            var arChosenFields = {};
+            var chosenFields = {};
             
             $("#detail_settings_container").find("input.data_item_field").each(function(){
-                arChosenFields[$(this).val()] = 1;
+                chosenFields[$(this).val()] = 1;
             });
             
-            var arFields = this.getFields();
+            var fields = this.getFields();
             
-            for(var fieldName in arFields){
-                if(!arChosenFields[fieldName]){
-                    arAvailable.push({
+            for(var fieldName in fields){
+                if(!chosenFields[fieldName]){
+                    available.push({
                         value: fieldName,
-                        title: arFields[fieldName]
+                        title: fields[fieldName]
                     });
                 }
             }
             
-            return arAvailable;
+            return available;
         }
         
         this.showNewTabPopup = function(){
@@ -180,13 +180,13 @@
         
         this.showNewFieldPopup = function(el){
             var index       = $(el).closest(".tab-pane").data("index");
-            var arAvailable = this.getAvaliableFields();
+            var available = this.getAvaliableFields();
 
             this.addFieldModal = new CModal({
                 title: "Добавление поля",
                 width: 350,
                 height: 350,
-                body: AdminTools.html.multiselect("", arAvailable, {}, {
+                body: AdminTools.html.multiselect("", available, {}, {
                     "class" : "form-control",
                     "id"    : "detail_new_field_select"
                 }) + AdminTools.html.hidden("", index, {
@@ -206,7 +206,7 @@
         }
         
         this.applyAddField = function(el){
-                var arValues        = $("#detail_new_field_select").val() || [];
+                var values        = $("#detail_new_field_select").val() || [];
                 var tabIndex        = $("#detail_field_index_input").val();
                 
                 var $displayList    = $("#detail_settings_container").find('.tab-pane[data-index="' + tabIndex + '"]')
@@ -227,8 +227,8 @@
                 fieldIndex++;
                 /*определяем максимальный индекс и берем следующий*/
                 
-                for(var i in arValues){
-                    var field = arValues[i];
+                for(var i in values){
+                    var field = values[i];
                     
                     var fieldHtml = AdminTools.getTemplate("#detail_settings_field_template", {
                         tabIndex    : tabIndex,
@@ -236,7 +236,7 @@
                         dragHandle  : "drag_handle_1",
                         index       : fieldIndex,
                         field       : field,
-                        title       : AdminTools.html.chars(this.arFields[field])
+                        title       : AdminTools.html.chars(this.fields[field])
                     });
 
                     $displayList.append(fieldHtml);

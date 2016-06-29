@@ -1,44 +1,43 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \Helpers\CHtml;
-use \Helpers\CBuffer;
+use Helpers\CHtml;
+use Helpers\CBuffer;
 
 class PasswordRenderer extends StringRenderer{
-    public function renderDetail($value, array $arData = [], array $arOptions = []){
-        $obField        = $this->getField();
-        $fieldName      = $obField->getName();
-        $arParams       = $this->getParams();
+    public function renderDetail($value, array $data = [], array $arOptions = []){
+        $field      = $this->getField();
+        $fieldName  = $field->getName();
 
-        if($obField->disabled){
+        if($field->disabled){
             return "<div class=\"control-disabled\">" . (is_array($value) ? reset($value) : $value) . "</div>";
         }
         
         CBuffer::start();
-            if($obField->multi){
+            if($field->multi){
                 $containerID = uniqid($fieldName . "_");
                     ?>
                         <div class="form-group">
-                            <label class="col-sm-2 control-label"><?=$obField->title . ":" . ($obField->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
+                            <label class="col-sm-2 control-label"><?=$field->title . ":" . ($field->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
                             <div class="col-sm-6 control-content">
                                 <div class="entity_field_container_<?=$containerID;?>">
                                     <?
-                                        $arValues = is_array($value) ? $value : [$value];
+                                        $values = is_array($value) ? $value : [$value];
                                     
                                         $i = 0;
                                         
-                                        foreach($arValues AS $value){
+                                        foreach($values AS $value){
                                             ?>
                                                 <div class="row">
                                                     <div class="col-sm-9">
                                                         <?
-                                                            echo CHtml::password($arParams["requestName"] . "[" . $fieldName . "][]", $value, [
+                                                            echo CHtml::password($options["requestName"] . "[" . $fieldName . "][]", $value, [
                                                                 "class" => "form-control"
                                                             ]);
                                                             
-                                                            if($i == 0 && $obField->description){
+                                                            if($i == 0 && $field->description){
                                                                 ?>
-                                                                    <span class="help-block"><?=$obField->description;?></span>
+                                                                    <span class="help-block"><?=$field->description;?></span>
                                                                 <?
                                                             }
                                                         ?>
@@ -76,7 +75,7 @@ class PasswordRenderer extends StringRenderer{
                         <script type="template/html" id="entity_field_value_template_<?=$containerID;?>">
                             <div class="row">
                                 <div class="col-sm-9">
-                                    <?=CHtml::password($arParams["requestName"] . "[" . $fieldName . "][]", "", [
+                                    <?=CHtml::password($options["requestName"] . "[" . $fieldName . "][]", "", [
                                         "class" => "form-control",
                                     ]);?>
                                 </div>
@@ -104,18 +103,18 @@ class PasswordRenderer extends StringRenderer{
                 $value = is_array($value) ? reset($value) : $value ;
                 ?>
                     <div class="form-group">
-                        <label class="col-sm-2 control-label"><?=$obField->title . ":" . ($obField->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
+                        <label class="col-sm-2 control-label"><?=$field->title . ":" . ($field->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
                         <div class="col-sm-6 control-content">
                             <div class="row">
                                 <div class="col-sm-9">
                                     <?
-                                        echo CHtml::password($arParams["requestName"] . "[" . $fieldName . "]", $value, [
+                                        echo CHtml::password($options["requestName"] . "[" . $fieldName . "]", $value, [
                                             "class" => "form-control"
                                         ]);
                                     
-                                        if($obField->description){
+                                        if($field->description){
                                             ?>
-                                                <span class="help-block"><?=$obField->description;?></span>
+                                                <span class="help-block"><?=$field->description;?></span>
                                             <?
                                         }
                                     ?>
@@ -129,4 +128,3 @@ class PasswordRenderer extends StringRenderer{
         return CBuffer::end();
     }
 }
-?>

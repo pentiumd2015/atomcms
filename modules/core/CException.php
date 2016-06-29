@@ -26,4 +26,3 @@ class CException extends \Exception{
         CEvent::trigger("CORE.SHUTDOWN", [$errors]);
     }
 }
-?>

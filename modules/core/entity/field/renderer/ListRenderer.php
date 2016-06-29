@@ -1,9 +1,9 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \Helpers\CHtml;
-use \Helpers\CArrayHelper;
-use \Helpers\CBuffer;
+use Helpers\CHtml;
+use Helpers\CArrayHelper;
+use Helpers\CBuffer;
 
 class ListRenderer extends BaseRenderer{
     public $values = NULL;
@@ -12,13 +12,13 @@ class ListRenderer extends BaseRenderer{
         /*load at once*/
         
         if($this->values == NULL){
-            $obField = $this->getField();
+            $field = $this->getField();
 
-            if(is_callable($obField->values)){
-                $callback = $obField->values;
+            if(is_callable($field->values)){
+                $callback = $field->values;
                 $values = $callback($this);
-            }else if(is_array($obField->values)){
-                $values = $obField->values;
+            }else if(is_array($field->values)){
+                $values = $field->values;
             }
             
             $this->values = is_array($values) ? $values : [] ;
@@ -34,18 +34,18 @@ class ListRenderer extends BaseRenderer{
         return $this->values;
     }
     
-    public function renderList($value, array $arData = [], array $arOptions = []){
-        $obField        = $this->getField();
-        $arValues       = $this->loadValues();
+    public function renderList($value, array $arData = [], array $options = []){
+        $field        = $this->getField();
+        $values       = $this->loadValues();
 
-        if($obField->multi){
+        if($field->multi){
             if(is_array($value) && count($value)){
                 $str = "";
 
                 foreach($value AS $valueID){
-                    if(isset($arValues[$valueID])){
-                        $class = isset($arValues[$valueID]["class"]) ? $arValues[$valueID]["class"] : "label-primary";
-                        $str.= "<span class=\"label " . $class . "\">" . $arValues[$valueID]["title"] . "</span> ";
+                    if(isset($values[$valueID])){
+                        $class = isset($values[$valueID]["class"]) ? $values[$valueID]["class"] : "label-primary";
+                        $str.= "<span class=\"label " . $class . "\">" . $values[$valueID]["title"] . "</span> ";
                     }
                 }
             }else{
@@ -56,9 +56,9 @@ class ListRenderer extends BaseRenderer{
                 $value = reset($value);
             }
             
-            if(isset($arValues[$value])){
-                $class = isset($arValues[$value]["class"]) ? $arValues[$value]["class"] : "label-primary";
-                $str = "<span class=\"label " . $class . "\">" . $arValues[$value]["title"] . "</span> ";
+            if(isset($values[$value])){
+                $class = isset($values[$value]["class"]) ? $values[$value]["class"] : "label-primary";
+                $str = "<span class=\"label " . $class . "\">" . $values[$value]["title"] . "</span> ";
             }else{
                 $str = "-";
             }
@@ -67,19 +67,19 @@ class ListRenderer extends BaseRenderer{
         return $str;
     }
     
-    public function renderFilter($value, array $arData = [], array $arOptions = []){
-        $obField        = $this->getField();
-        $arValues       = $this->loadValues();
+    public function renderFilter($value, array $arData = [], array $options = []){
+        $field        = $this->getField();
+        $values       = $this->loadValues();
         
-        $arOptionsList = ["" => "Не выбрана"];
-        $arOptionsList  = CArrayHelper::replace($arOptionsList, CArrayHelper::getKeyValue($arValues, null, "title"));
+        $optionsList = ["" => "Не выбрана"];
+        $optionsList  = CArrayHelper::replace($optionsList, CArrayHelper::map($values, null, "title"));
 
         CBuffer::start();
             ?>
                 <div class="form-group">
-                    <label class="col-sm-3 control-label"><?=$obField->title;?>:</label>
+                    <label class="col-sm-3 control-label"><?=$field->title;?>:</label>
                     <div class="col-sm-9">
-                        <?=CHtml::select($arParams["requestName"] . "[" . $obField->getName() . "]", $arOptionsList, $value, [
+                        <?=CHtml::select($options["requestName"] . "[" . $field->getName() . "]", $optionsList, $value, [
                             "class" => "form-control"
                         ]);?>
                     </div>
@@ -88,29 +88,28 @@ class ListRenderer extends BaseRenderer{
         return CBuffer::end();
     }
     
-    public function renderDetail($value, array $arData = [], array $arOptions = []){
-        $obField    = $this->getField();
-        $arValues   = $this->loadValues();
-        $fieldName  = $obField->getName();
-        $arParams   = $this->getParams();
+    public function renderDetail($value, array $arData = [], array $options = []){
+        $field    = $this->getField();
+        $values   = $this->loadValues();
+        $fieldName  = $field->getName();
 
         CBuffer::start();
             ?>
                 <div class="form-group">
-                    <label class="col-sm-2 control-label"><?=$obField->title;?>:<?=($obField->required ? "<span class=\"mandatory\">*</span>" : "")?></label>
+                    <label class="col-sm-2 control-label"><?=$field->title;?>:<?=($field->required ? "<span class=\"mandatory\">*</span>" : "")?></label>
                     <div class="col-sm-6 control-content">
                         <?
-                            echo CHtml::hidden($arParams["requestName"] . "[" . $fieldName . "]");
+                            echo CHtml::hidden($options["requestName"] . "[" . $fieldName . "]");
                             
-                            if($obField->multi){
+                            if($field->multi){
                                 if(!is_array($value)){
                                     $value = [];
                                 }
                                 
-                                foreach($arValues AS $valueID => $arValue){
+                                foreach($values AS $valueID => $arValue){
                                     ?>
                                         <div class="checkbox checkbox-primary">
-                                            <?=CHtml::checkbox($arParams["requestName"] . "[" . $fieldName . "][]", (in_array($valueID, $value)), [
+                                            <?=CHtml::checkbox($options["requestName"] . "[" . $fieldName . "][]", (in_array($valueID, $value)), [
                                                 "value" => $valueID,
                                                 "id"    => $fieldName . "_" . $valueID
                                             ]);?>
@@ -126,10 +125,10 @@ class ListRenderer extends BaseRenderer{
                             }else{
                                 $value = is_array($value) ? reset($value) : $value ;
                                 
-                                foreach($arValues AS $valueID => $arValue){
+                                foreach($values AS $valueID => $arValue){
                                     ?>
                                         <div class="radio radio-primary">
-                                            <?=CHtml::radio($arParams["requestName"] . "[" . $fieldName . "]", ($valueID == $value), [
+                                            <?=CHtml::radio($options["requestName"] . "[" . $fieldName . "]", ($valueID == $value), [
                                                 "value" => $valueID,
                                                 "id"    => $fieldName . "_" . $valueID
                                             ]);?>
@@ -151,11 +150,11 @@ class ListRenderer extends BaseRenderer{
     }
     
     public function renderParams(){
-        $obField        = $this->getField();
-        $containerID    = uniqid("f" . $obField->getName());
-        $arValues       = $obField->loadValues();
+        $field        = $this->getField();
+        $containerID    = uniqid("f" . $field->getName());
+        $values       = $field->loadValues();
         
-        if($obField->multi){
+        if($field->multi){
             $arViews = array(
                 "multiselect"   => "Выпадающий список",
                 "checkbox"      => "Флажки",
@@ -173,7 +172,7 @@ class ListRenderer extends BaseRenderer{
             $currentView = key($arViews);
         }
         
-        /*$arFieldVariants = EntityFieldVariant::findAll(array(
+        /*$fieldVariants = EntityFieldVariant::findAll(array(
             "condition" => "entity_field_id=?",
             "order"     => "priority ASC"
         ), array($this->obEntityField->entity_field_id));*/
@@ -210,18 +209,18 @@ class ListRenderer extends BaseRenderer{
                             <?
                                 $variantCounter = 0;
                                 
-                                if(count($arFieldVariants)){
+                                if(count($fieldVariants)){
                                     $i = 0;
-                                    foreach($arFieldVariants AS $obFieldVariant){
+                                    foreach($fieldVariants AS $fieldVariant){
                                         ?>
                                             <li class="item_field_variant">
                                                 <div class="row">
                                                     <div class="col-sm-1 drag_handle">
                                                         <i class="icon-move"></i>
                                                     </div>
-                                                    <div class="col-sm-1 variant_item_id"><?=$obFieldVariant->entity_field_variant_id;?></div>
+                                                    <div class="col-sm-1 variant_item_id"><?=$fieldVariant->entity_field_variant_id;?></div>
                                                     <div class="col-sm-8">
-                                                        <?=CHtml::text("entity_field[variants][" . $variantCounter . "][title]", $obFieldVariant->title, [
+                                                        <?=CHtml::text("entity_field[variants][" . $variantCounter . "][title]", $fieldVariant->title, [
                                                             "class" => "form-control",
                                                         ]);?>
                                                     </div>
@@ -246,7 +245,7 @@ class ListRenderer extends BaseRenderer{
                                                 <div class="col-sm-1 drag_handle">
                                                     <i class="icon-move"></i>
                                                 </div>
-                                                <div class="col-sm-1 variant_item_id"><?=$obFieldVariant->entity_field_variant_id;?></div>
+                                                <div class="col-sm-1 variant_item_id"><?=$fieldVariant->entity_field_variant_id;?></div>
                                                 <div class="col-sm-8">
                                                     <?=CHtml::text("entity_field[variants][" . $variantCounter . "][title]", "", [
                                                         "class" => "form-control",
@@ -369,4 +368,3 @@ class ListRenderer extends BaseRenderer{
         return CBuffer::end();
     }
 }
-?>

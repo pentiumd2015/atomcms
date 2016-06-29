@@ -1,12 +1,13 @@
 <?
+
 class CAutoload{
-    protected static $obj       = null;
-    protected $autoloadDirMap   = [];
-    protected $autoLoadClassMap = [];
-    protected $rootPath         = null;
+    protected static $obj   = null;
+    protected $dirMap       = [];
+    protected $classMap     = [];
+    protected $rootPath     = null;
     
     public static function getInstance(){
-        if(static::$obj == null){
+        if(static::$obj === null){
             static::$obj = new static;
         }
         
@@ -25,56 +26,54 @@ class CAutoload{
     }
     
     public function getRootPath(){
-		return $this->rootPath ? $this->rootPath : $_SERVER["DOCUMENT_ROOT"];
+        if($this->rootPath === null){
+            $this->rootPath = $_SERVER["DOCUMENT_ROOT"];
+        }
+
+		return $this->rootPath;
     }
     
     protected function load($className){
         $classPath  = $this->preparePath($className);
         $rootPath   = $this->getRootPath();
-        
-        if(isset($this->autoLoadClassMap[$classPath])){
-            $file = $this->autoLoadClassMap[$classPath];
+
+        if(isset($this->classMap[$classPath])){
+            $file = $this->classMap[$classPath];
         
             if(is_file($rootPath . "/" . $file)){
                 require_once($rootPath . "/" . $file);
                 return;
-            }else{
-                foreach($this->autoloadDirMap AS $dirPath => $loaded){
-                    $classFile = $rootPath . "/" . $dirPath . "/" . $file;
-                    
-                    if(is_file($classFile)){
-                        require_once($classFile);
-                        return;
-                    }
+            }
+
+            foreach($this->dirMap AS $dirPath => $loaded){
+                if(is_file($rootPath . "/" . $dirPath . "/" . $file)){
+                    require_once($rootPath . "/" . $dirPath . "/" . $file);
+                    return;
                 }
             }
         }
         
-        foreach($this->autoloadDirMap AS $dirPath => $loaded){
-            $classFile = $rootPath . "/" . $dirPath . "/" . $classPath . ".php";
-
-            if(is_file($classFile)){
-                require_once($classFile);
+        foreach($this->dirMap AS $dirPath => $loaded){
+            if(is_file($rootPath . "/" . $dirPath . "/" . $classPath . ".php")){
+                require_once($rootPath . "/" . $dirPath . "/" . $classPath . ".php");
                 return;
             }
         }
-        
-        exit;
-        
-        return false;
+
+        throw new CException("Class '" . $className . "' not found");
     }
     
     public function addDirMap($dirPath){ //add dir for autoload classes
         $dirPaths = is_array($dirPath) ? $dirPath : [$dirPath] ;
         
         foreach($dirPaths AS $dirPath){
-            $this->autoloadDirMap[$this->normalizePath($dirPath)] = true;
+            $this->dirMap[$this->normalizePath($dirPath)] = true;
         }
     }
     
     public function addClassMap(array $classMap){
 		foreach($classMap AS $class => $classPath){
-			$this->autoLoadClassMap[$this->preparePath($class)] = $this->normalizePath($classPath);
+			$this->classMap[$this->preparePath($class)] = $this->normalizePath($classPath);
 		}
 	}
     
@@ -93,4 +92,3 @@ class CAutoload{
         return $classPath;
     }
 }
-?>

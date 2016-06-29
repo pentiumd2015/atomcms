@@ -1,41 +1,40 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \Db\Builder AS DbBuilder;
-use \Entity\Result\AddResult;
-use \Entity\Result\UpdateResult;
-use \Entity\Result\DeleteResult;
-use \Entity\Result\SelectResult;
-use \Entity\Field\BaseFieldDispatcher;
+use DB\Query AS DbQuery;
+use Entity\Field\BaseFieldDispatcher;
 
 class FieldDispatcher extends BaseFieldDispatcher{
-    public function isField($obField){
-        return $obField instanceof Field;
+    public function isField($field){
+        return $field instanceof Field;
     }
     
-    public function add(AddResult $obResult){
-        $this->onBeforeAdd($obResult);
-        
-        $arFieldValues = [];
-        
-        foreach($obResult->getData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $arFieldValues[$fieldName] = $value;
+    public function add($result){
+        $this->onBeforeAdd($result);
+
+        $data = $result->getData();
+
+        $fieldValues = [];
+
+        foreach($this->fields AS $fieldName => $field){
+            if(isset($data[$fieldName])){
+                $fieldValues[$fieldName] = $data[$fieldName];
             }
         }
         
-        if(!count($arFieldValues)){
+        if(!count($fieldValues)){
             return false;
         }
-        
-        $id = $this->getBuilder()->insert($arFieldValues);
-        
+
+        $id = (new DbQuery)->from($this->query->from)
+                           ->insert($fieldValues);
+
         if($id){
-            $obResult->setDataValues([
-                $this->getBuilder()->getEntity()->getPk() => $id
+            $result->setDataValues([
+                $this->query->getManager()->getPk() => $id
             ]);
             
-            $this->onAfterAdd($obResult);
+            $this->onAfterAdd($result);
             
             return true;
         }else{
@@ -43,49 +42,39 @@ class FieldDispatcher extends BaseFieldDispatcher{
         }
     }
     
-    public function update($id, UpdateResult $obResult){
-        $this->onBeforeUpdate($id, $obResult);
-        
-        $arFieldValues = [];
-        
-        foreach($obResult->getChangedData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $arFieldValues[$fieldName] = $value;
+    public function update($id, $result){
+        $this->onBeforeUpdate($id, $result);
+
+        $data = $result->getData();
+
+        $fieldValues = [];
+
+        foreach($this->fields AS $fieldName => $field){
+            if(isset($data[$fieldName])){
+                $fieldValues[$fieldName] = $data[$fieldName];
             }
         }
-        
-        if(count($arFieldValues)){
-            (new DbBuilder)->from($this->getBuilder()->from)
-                           ->where($this->getBuilder()->getEntity()->getPk(), $id)
-                           ->update($arFieldValues);
-                           
-            $this->onAfterUpdate($id, $obResult);
+
+        if(count($fieldValues)){
+            (new DbQuery)->from($this->query->from)
+                         ->where($this->query->getManager()->getPk(), $id)
+                         ->update($fieldValues);
+                
+            $this->onAfterUpdate($id, $result);
         }
 
         return true;
     }
     
-    public function delete($id, DeleteResult $obResult){
-        $this->onBeforeDelete($id, $obResult);
+    public function delete($id, $result){
+        $this->onBeforeDelete($id, $result);
         
-        (new DbBuilder)->from($this->getBuilder()->from)
-                       ->where($this->getBuilder()->getEntity()->getPk(), $id)
-                       ->delete();
+        (new DbQuery)->from($this->query->from)
+                     ->where($this->query->getManager()->getPk(), $id)
+                     ->delete();
         
-        $this->onAfterDelete($id, $obResult);
+        $this->onAfterDelete($id, $result);
         
         return true;
-    }
-    
-    public function fetch(SelectResult $obResult, $oneRow = false){
-        if($oneRow){
-            $arData = [$this->getBuilder()->operation("fetch")];
-        }else{
-            $arData = $this->getBuilder()->operation("fetchAll");
-        }
-
-        $obResult->setData($arData);
-        
-        parent::fetch($obResult, $oneRow);
     }
 }

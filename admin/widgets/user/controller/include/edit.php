@@ -1,58 +1,63 @@
 <?
-use \Entity\Display;
+use Entity\Display;
+use Helpers\CHttpResponse;
+use Helpers\CJson;
 
-$userID = $this->app("user")->getID();
-$id     = (int)$this->app("route")->getVarValue("ID");
-$obUser = new CUser;
-$arFormData = $obUser->getByID($id);
+$addUrl     = $this->getParam("addUrl");
+$editUrl    = $this->getParam("editUrl");
+$listUrl    = $this->getParam("listUrl");
 
-if(!$arFormData){
+$userId = CAtom::$app->user->getId();
+
+$id     = (int)$this->varValues["ID"];
+$user = new CUser;
+$formData = $user->getById($id);
+
+if(!$formData){
     CEvent::trigger("404");
 }
 
-$formID         = $obUser->getEntityName();
-$redirectUrl    = str_replace("{ID}", $id, $editURL);
+$formId = $user->getEntityName();
 
-if($_REQUEST[$formID]){
-    $obResult = $obUser->update($id, $_REQUEST[$formID]);
+if($_REQUEST[$formId]){
+    $result = $user->update($id, $_REQUEST[$formId]);
 
-    if(app("request")->isAjax()){
-        $arResponse = ["result" => 1];
+    if(CAtom::$app->request->isAjax()){
+        $response = ["result" => 1];
         
-        if($obResult->isSuccess()){
-            $arResponse["hasErrors"]    = 0;
-            $arResponse["redirectURL"]  = $redirectUrl;
+        if($result->isSuccess()){
+            $response["hasErrors"]    = 0;
+            $response["redirectUrl"]  = str_replace("{ID}", $id, $editUrl);
         }else{
-            $arResponse["hasErrors"]    = 1;
-            $arResponse["errors"]       = [];
+            $response["hasErrors"]    = 1;
+            $response["errors"]       = [];
             
-            foreach($obResult->getErrors() AS $obFieldError){
-                $arResponse["errors"][$obFieldError->getFieldName()] = [
-                    "code"      => $obFieldError->getCode(),
-                    "message"   => $obFieldError->getMessage()
+            foreach($result->getErrors() AS $fieldError){
+                $response["errors"][$fieldError->getColumnName()] = [
+                    "code"      => $fieldError->getCode(),
+                    "message"   => $fieldError->getMessage()
                 ];
             }
         }
 
         CHttpResponse::setType(CHttpResponse::JSON);
-        echo CJSON::encode($arResponse);
+        echo CJson::encode($response);
         exit;
     }
 }
 
 CBreadcrumbs::add([
-    $listURL    => "Список пользователей",
-    $addURL     => $obUser->login
+    $listUrl                            => "Список пользователей",
+    str_replace("{ID}", $id, $editUrl)  => $formData["login"]
 ]);
 
-$obDisplay = new Display($obUser);
+$display = new Display($user);
 
-$this->setData([
-    "arDisplayFields"   => $obDisplay->getDisplayDetailFields($userID),
-    "formID"            => $formID,
-    "listURL"           => $listURL,
-    "arFormData"        => $arFormData
+$this->setViewData([
+    "mode"          => "edit",
+    "displayFields" => $display->getDisplayDetailFields($userId),
+    "formId"        => $formId,
+    "formData"      => isset($_REQUEST[$formId]) ? $_REQUEST[$formId] : $formData
 ]);
 
-$this->includeView("edit");
-?>
+$this->includeView("form");

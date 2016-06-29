@@ -1,27 +1,24 @@
 <?
-if(CHttpRequest::isAjax()){
-    ?>
-        <script type="text/javascript" src="<?=$this->path . "js/detail.js";?>"></script>
-        <link href="<?=$this->path . "css/detail.css";?>" rel="stylesheet" type="text/css" />
-    <?
-}else{
-    CPage::addJS($this->path . "js/detail.js");
-    CPage::addCSS($this->path . "css/detail.css");
-}
+use Helpers\CHtml;
+use Helpers\CJson;
+
+$this->view->addJs(BASE_URL . $this->path . "js/detail.js");
+$this->view->addCss(BASE_URL . $this->path . "css/detail.css");
 ?>
 <script type="text/javascript">
     <?
-    $arVisibleFieldNames = [];
-    foreach($obDisplay->getAllVisibleFields() AS $fieldName => $obField){
-        $arVisibleFieldNames[$fieldName] = $obField->title;
-    }
+        $fieldNamesJson = [];
+
+        foreach($fields AS $fieldName => $field){
+            $fieldNamesJson[$fieldName] = $field->title;
+        }
     ?>
-    $.detailSettings.setFields(<?=CJSON::encode($arVisibleFieldNames);?>);
+    $.detailSettings.setFields(<?=CJson::encode($fieldNamesJson);?>);
 </script>
 <div class="tabbable" id="detail_settings_container">
     <ul class="nav nav-tabs">
          <?
-            foreach($arEntityDisplay AS $tabIndex => $arTab){
+            foreach($displayFields AS $tabIndex => $tab){
                 $activeTab = ($tabIndex == 0);
                 ?>
                     <li<?=($activeTab ? ' class="active"' : "");?>>
@@ -29,7 +26,7 @@ if(CHttpRequest::isAjax()){
                             <div class="tab_drag_handle">
                                 <i class="icon-move"></i>
                             </div>
-                            <span class="tab_title"><?=$arTab["title"];?></span>
+                            <span class="tab_title"><?=$tab["title"];?></span>
                             <div class="nav-tab-panel">
                                 <span class="tab_edit" onclick="$.detailSettings.showEditTabPopup(this)">
                                     <i class="icon-pencil"></i>
@@ -59,20 +56,20 @@ if(CHttpRequest::isAjax()){
     <form class="form-horizontal display_form" method="POST" action="<?=BASE_URL . "ajax/";?>">
         <?=CHtml::hidden("widget", $this->name);?>
         <?=CHtml::hidden("method", "setDisplaySettings");?>
-        <?=CHtml::hidden("entity", $obEntity->getClass());?>
+        <?=CHtml::hidden("entity", $entity->getClass());?>
         <?=CHtml::hidden("type", "detail");?>
         <div class="tab-content with-padding">
             <?
                 $tabIndex   = 0;
                 $itemIndex  = 0;
                 
-                foreach($arEntityDisplay AS $arTab){
+                foreach($displayFields AS $tab){
                     $activeTab = ($tabIndex == 0);
                     ?>
                         <div class="tab-pane fade in<?=($activeTab ? " active" : "");?>" id="view_tab_<?=$tabIndex;?>" data-index="<?=$tabIndex;?>">
                             <div class="row">
                                 <div class="col-sm-12">
-                                    <?=CHtml::hidden("data[" . $tabIndex . "][title]", $arTab["title"], [
+                                    <?=CHtml::hidden("data[" . $tabIndex . "][title]", $tab["title"], [
                                         "class" => "data_tab_title"
                                     ]);?>
                                     <a href="#" class="btn btn-info" onclick="$.detailSettings.showNewFieldPopup(this); return false;">Добавить поля</a>
@@ -82,8 +79,13 @@ if(CHttpRequest::isAjax()){
                                 <div class="col-sm-12">    
                                     <ul class="display_list">
                                         <?
-                                            if($arTab["fields"]){
-                                                foreach($arTab["fields"] AS $fieldName => $obField){
+                                            if($tab["fields"]){
+                                                foreach($tab["fields"] AS $fieldName){
+                                                    if(!isset($fields[$fieldName])){
+                                                        continue;
+                                                    }
+                                                    
+                                                    $field = $fields[$fieldName];
                                                     ?>
                                                         <li data-index="<?=$itemIndex;?>">
                                                             <div class="row">
@@ -93,7 +95,7 @@ if(CHttpRequest::isAjax()){
                                                                         "class" => "data_item_field"
                                                                     ]);?>
                                                                 </div>
-                                                                <div class="col-sm-9 display_item_title"><?=$obField->title;?></div>
+                                                                <div class="col-sm-9 display_item_title"><?=$field->title;?></div>
                                                                 <div class="col-sm-2 text-right">
                                                                     <a href="#" class="btn btn-primary btn-icon btn-xs" onclick="$.detailSettings.deleteField(this)">
                                                                         <i class="icon icon-close"></i>

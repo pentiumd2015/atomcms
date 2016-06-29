@@ -1,55 +1,59 @@
 <?
 namespace Entity\Field\Custom;
 
-use \Entity\Result\AddResult;
-use \Entity\Result\UpdateResult;
-use \Entity\Result\DeleteResult;
-use \Entity\Result\SelectResult;
 
 class FieldDispatcher extends \Entity\Field\BaseFieldDispatcher{
-    public function isField($obField){
-        return $obField instanceof Field;
+    public function isField($field){
+        return $field instanceof Field;
     }
     
-    public function add(AddResult $obResult){
-        foreach($obResult->getData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $obField->onBeforeAdd($obResult);
-                
-                if(is_callable($obField->onSaveData)){
-                    $obField->onSaveData($obResult, $obField);
+    public function add($result){
+        $data = $result->getData();
+
+        foreach($this->fields AS $fieldName => $field){
+            if(isset($data[$fieldName])){
+                $value = $data[$fieldName];
+
+                $field->onBeforeAdd($value, $result);
+
+                if(is_callable($field->onSaveData)){
+                    $field->onSaveData($result, $field);
                 }
-                
-                $obField->add($obResult);
-                $obField->onAfterAdd($obResult);
+
+                $field->add($result);
+                $field->onAfterAdd($value, $result);
             }
         }
         
         return true;
     }
     
-    public function update($id, UpdateResult $obResult){
-        foreach($obResult->getChangedData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $obField->onBeforeUpdate($id, $obResult);
-                
-                if(is_callable($obField->onSaveData)){
-                    $obField->onSaveData($obResult, $obField);   
+    public function update($id, $result){
+        $data = $result->getData();
+
+        foreach($this->fields AS $fieldName => $field){
+            if(isset($data[$fieldName])){
+                $value = $data[$fieldName];
+
+                $field->onBeforeUpdate($value, $result);
+
+                if(is_callable($field->onSaveData)){
+                    $field->onSaveData($result, $field);
                 }
-                
-                $obField->update($id, $obResult);
-                $obField->onAfterUpdate($id, $obResult);
+
+                $field->update($id, $result);
+                $field->onAfterUpdate($value, $result);
             }
         }
         
         return true;
     }
     
-    public function delete($id, DeleteResult $obResult){
-        foreach($this->arFields AS $obField){
-            $obField->onBeforeDelete($id, $obResult);
-            $obField->delete($id, $obResult);
-            $obField->onAfterDelete($id, $obResult);
+    public function delete($id, $result){
+        foreach($this->fields AS $field){
+            $field->onBeforeDelete($result);
+            $field->delete($id, $result);
+            $field->onAfterDelete($result);
         }
         
         return true;

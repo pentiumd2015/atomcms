@@ -1,8 +1,0 @@
-<?
-namespace Entities;
-
-class EntityFieldTab extends \DB\Manager{
-    static protected $_table    = "entity_field_tab";
-    static protected $_pk       = "entity_field_tab_id";
-}
-?>

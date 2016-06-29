@@ -1,42 +1,37 @@
 <?
 namespace Entity\Field;
 
-use \Entity\Builder;
-use \Entity\Result\BaseResult;
-use \Entity\Result\AddResult;
-use \Entity\Result\UpdateResult;
-use \Entity\Result\DeleteResult;
-use \Entity\Result\SelectResult;
+use Entity\Query;
 
 abstract class BaseFieldDispatcher{
-    protected $obBuilder;
+    protected $query;
     
-    protected $arFields = [];
+    protected $fields = [];
     
-    abstract public function add(AddResult $obResult);
-    abstract public function update($id, UpdateResult $obResult);
-    abstract public function delete($id, DeleteResult $obResult);
+    abstract public function add($result);
+    abstract public function update($id, $result);
+    abstract public function delete($id, $result);
     
     
-    public function __construct(Builder $obBuilder){
-        $this->obBuilder = $obBuilder;
+    public function __construct(Query $query){
+        $this->query = $query;
     }
     
-    public function getBuilder(){
-        return $this->obBuilder;
+    public function getQuery(){
+        return $this->query;
     }
     
-    public function fetch(SelectResult $obResult, $oneRow = false){
-        $this->onFetch($obResult);
+    public function fetch($result){
+        $this->onFetch($result);
     }
     
-    protected function onBeforeAdd(AddResult $obResult){
-        foreach($obResult->getData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $obField->onBeforeAdd($value, $obResult);
+    protected function onBeforeAdd($result){
+        foreach($result->getData() AS $fieldName => $value){
+            if($field = $this->getField($fieldName)){
+                $field->onBeforeAdd($value, $result);
                 
-                if(is_callable($obField->onSaveData)){
-                    $obField->onSaveData($value, $obResult, $obField);   
+                if(is_callable($field->onSaveData)){
+                    $field->onSaveData($value, $result, $field);   
                 }
             }
         }
@@ -44,92 +39,92 @@ abstract class BaseFieldDispatcher{
         return $this;
     }
     
-    protected function onAfterAdd(AddResult $obResult){
-        foreach($obResult->getData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $obField->onAfterAdd($value, $obResult);
+    protected function onAfterAdd($result){
+        foreach($result->getData() AS $fieldName => $value){
+            if($field = $this->getField($fieldName)){
+                $field->onAfterAdd($value, $result);
             }
         }
         
         return $this;
     }
     
-    protected function onBeforeUpdate($id, UpdateResult $obResult){
-        foreach($obResult->getChangedData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $obField->onBeforeUpdate($value, $obResult);
+    protected function onBeforeUpdate($id, $result){
+        foreach($result->getData() AS $fieldName => $value){
+            if($field = $this->getField($fieldName)){
+                $field->onBeforeUpdate($value, $result);
                 
-                if(is_callable($obField->onSaveData)){
-                    $obField->onSaveData($value, $obResult, $obField);   
+                if(is_callable($field->onSaveData)){
+                    $field->onSaveData($value, $result, $field);   
                 }
             }
         }
     }
     
-    protected function onAfterUpdate($id, UpdateResult $obResult){
-        foreach($obResult->getChangedData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $obField->onAfterUpdate($value, $obResult);
+    protected function onAfterUpdate($id, $result){
+        foreach($result->getData() AS $fieldName => $value){
+            if($field = $this->getField($fieldName)){
+                $field->onAfterUpdate($value, $result);
             }
         }
     }
     
-    protected function onBeforeDelete($id, DeleteResult $obResult){
-        foreach($obResult->getData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $obField->onBeforeDelete($value, $obResult);
+    protected function onBeforeDelete($id, $result){
+        foreach($result->getData() AS $fieldName => $value){
+            if($field = $this->getField($fieldName)){
+                $field->onBeforeDelete($value, $result);
             }
         }
     }
     
-    protected function onAfterDelete($id, DeleteResult $obResult){
-        foreach($obResult->getData() AS $fieldName => $value){
-            if($obField = $this->getField($fieldName)){
-                $obField->onAfterDelete($value, $obResult);
+    protected function onAfterDelete($id, $result){
+        foreach($result->getData() AS $fieldName => $value){
+            if($field = $this->getField($fieldName)){
+                $field->onAfterDelete($value, $result);
             }
         }
     }
     
-    protected function onFetch(SelectResult $obResult){
-        foreach($obResult->getSelectFieldNames() AS $fieldName){
-            if($obField = $this->getField($fieldName)){
-                $obField->onFetch($obResult);
+    protected function onFetch($result){
+        foreach($result->getSelectFieldNames() AS $fieldName){
+            if($field = $this->getField($fieldName)){
+                $field->onFetch($result);
                 
-                if(is_callable($obField->onFetchData)){
-                    $obField->onFetchData($obResult, $obField);
+                if(is_callable($field->onFetchData)){
+                    $field->onFetchData($result, $field);
                 }
             }
         }
     }
     
-    public function addField($obField){
-        if($this->isField($obField)){
-            $obField->setDispatcher($this);
-            $this->arFields[$obField->getName()] = $obField;
+    public function addField($field){
+        if($this->isField($field)){
+            $field->setDispatcher($this);
+            $this->fields[$field->getName()] = $field;
         }
         
         return $this;
     }
     
-    public function isField($obField){
-        return $obField instanceof BaseField;
+    public function isField($field){
+        return $field instanceof BaseField;
     }
     
-    public function setFields(array $arFields = []){
-        $this->arFields = [];
+    public function setFields(array $fields = []){
+        $this->fields = [];
         
-        foreach($arFields AS $fieldName => $obField){
-            $this->addField($obField);
+        foreach($fields AS $fieldName => $field){
+            $this->addField($field);
         }
         
         return $this;
     }
     
     public function getFields(){
-        return $this->arFields;
+        return $this->fields;
     }
     
     public function getField($fieldName){
-        return isset($this->arFields[$fieldName]) ? $this->arFields[$fieldName] : false ;
+        return isset($this->fields[$fieldName]) ? $this->fields[$fieldName] : false ;
     }
 }

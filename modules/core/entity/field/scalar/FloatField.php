@@ -1,10 +1,10 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \Entity\Field\Renderer\NumericRenderer;
+use Entity\Field\Renderer\NumericRenderer;
 
 class FloatField extends IntegerField{
-    protected $arInfo = [
+    protected $info = [
         "title" => "Число с плавающей точкой"
     ];
     
@@ -12,4 +12,3 @@ class FloatField extends IntegerField{
         return new NumericRenderer($this);
     }
 }
-?>

@@ -11,7 +11,7 @@ class CHttpResponse{
     const UTF8 = "UTF-8";
     const JS   = "text/javascript";
     
-    protected static $arMessages = array(
+    protected static $codes = [
         // Informational 1xx
         100 => "Continue",
         101 => "Switching Protocols",
@@ -63,15 +63,15 @@ class CHttpResponse{
         504 => "Gateway Timeout",
         505 => "HTTP Version Not Supported",
         509 => "Bandwidth Limit Exceeded"
-    );
+    ];
     
-    static public function setHeader($header, $isReplace = true, $code = NULL){
+    static public function setHeader($header, $isReplace = true, $code = null){
         //if(!headers_sent()){
             header($header, $isReplace, $code);
        // }
     }
     
-    static public function setHeaders($arHeaders = array()){
+    static public function setHeaders($arHeaders = []){
         if(/*!headers_sent() && */is_array($arHeaders)){
             foreach($arHeaders AS $key => $header){
                 header($key . ": " . $header);
@@ -84,7 +84,7 @@ class CHttpResponse{
     }
     
     static public function setCode($code){
-        self::setHeader(self::$arMessages[$code], true, $code);
+        self::setHeader(self::$codes[$code], true, $code);
     }
     
     static public function setType($type){
@@ -94,9 +94,4 @@ class CHttpResponse{
     static public function redirect($location, $code = 302){
         self::setHeader("Location: " . $location, true, $code);
     }
-    /*
-    static public function toJSON($data, $flag = JSON_UNESCAPED_UNICODE, $depth = 512){
-        return json_encode($data, $flag, $depth);
-    }*/
 }
-?>

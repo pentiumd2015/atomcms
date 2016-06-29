@@ -1,37 +1,26 @@
- <?
-use \Helpers\CHttpResponse;
-use \Models\User;
-use \Helpers\CJSON;
+<?
+use Helpers\CHttpResponse;
+use Helpers\CJson;
 
-$method = $_REQUEST["method"];
+$request    = CAtom::$app->request;
+$method     = $request->get("method");
 
 switch($method){
     case "remove":
-        $arResponse = array("result" => 1);
-        $id         = (int)$_REQUEST["id"];
+        $response   = ["result" => 1];
+        $id         = (int)$request->get("id");
         
-        if($id){
-            $arUser = User::getByID($id);
-            
-            if($id > 1 && $arUser){
-                User::delete($arUser[User::getPk()]);
-                
-                $arResponse["hasErrors"]    = 0;
-            }else{
-                $arResponse["hasErrors"]    = 1;
-                $arResponse["errors"]       = "Пользователь не найден";
-                $arResponse["error_code"]   = "user not found";
-            }
+        if($id && $id > 1){
+            CUser::delete($id);
+
+            $response["hasErrors"]    = 0;
         }else{
-            $arResponse["hasErrors"]    = 1;
-            $arResponse["errors"]       = "Пользователь не найден";
-            $arResponse["error_code"]   = "user not found";
+            $response["hasErrors"]    = 1;
+            $response["errors"]       = "Пользователь не найден";
+            $response["error_code"]   = "user not found";
         }
         
         CHttpResponse::setType(CHttpResponse::JSON);
-        echo CJSON::encode($arResponse);
+        echo CJson::encode($response);
         break;
 }
-
-exit;
-?>

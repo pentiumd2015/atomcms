@@ -1,79 +1,85 @@
 <?
+
 class CRoute{
-    public $active = true;
-    public $templates = array();
+    public $active      = true;
+    public $layoutFile  = null;
+    public $pageFile    = null;
+    public $query       = null;
     public $path;
     public $url;
-    protected $varValues = [];
     
-    public function __construct(array $arRoute){
-        foreach($arRoute AS $property => $value){
+    public function __construct(array $route = []){
+        foreach($route AS $property => $value){
             $this->{$property} = $value;
         }
     }
     
-    public function getVarValues(){
-        return isset($this->varValues) ? $this->varValues : false ;
-    }
-    
-    public function getVarValue($paramName){
-        $arValues = $this->getVarValues();
-
-        return isset($arValues[$paramName]) ? $arValues[$paramName] : false ;
-    }
-    
-    static public function getMatch($uri, $pattern, $arPatternParams = array()){
-        $arResult = [];
+    public static function getMatchParams($uri, $pattern, array $params = []){
+        $result = [];
         
         if($uri == $pattern && strpos($uri, "{") === false){
-            return $arResult;
+            return $result;
         }
-        
-        $regexp = "#^". preg_replace("#\{.+?\}#", "(.+?)", $pattern) ."$#";
 
-		$arValues = array();
-        
-		if (!preg_match($regexp, $uri, $arValues)){
+		$values = [];
+
+		if(!preg_match("#^". preg_replace("#\{.+?\}#", "(.+?)", $pattern) ."$#", $uri, $values)){
             return false;
         }
         
-        $arMatches = array();
+        $matches = [];
               
-        if(preg_match_all("#\{(.+?)\}#", $pattern, $arMatches)){
-            if(count($arPatternParams)){
-                foreach($arMatches[1] AS $key => $match){
-                    if(isset($arPatternParams[$match])){
-                        $arParamMatch = array();
+        if(preg_match_all("#\{(.+?)\}#", $pattern, $matches, PREG_SET_ORDER)){
+            if(count($params)){
+                foreach($matches AS $key => $match){
+                    $value = $match[1];
+                    if(isset($params[$value])){
+                        $paramMatch = [];
                         
-                        if(preg_match("#" . $arPatternParams[$match] . "#", $arValues[$key + 1], $arParamMatch)){
-                            $countMatch = count($arParamMatch);
-                            
-                            if($countMatch == 1 || $countMatch == 2){
-                                $arResult[$match] = $arParamMatch[$countMatch - 1];
-                            }else{
-                                array_shift($arParamMatch);
-                                $arResult[$match] = $arParamMatch;
-                            }
-                        }else{
+                        if(!preg_match("#" . $params[$value] . "#", $values[$key + 1], $paramMatch)){
                             return false;
                         }
+                        
+                        if(count($paramMatch) == 1){
+                            $result[$value] = $paramMatch[0];
+                        }else{
+                            array_shift($paramMatch);
+                            $result[$value] = $paramMatch;
+                        }
                     }else{
-                        $arResult[$match] = $arValues[$key + 1];
+                        $result[$value] = $values[$key + 1];
                     }
                 }
             }else{
-                //array_shift($arValues);
-        	    //$arResult = array_combine($arMatches[1], $arValues); 
-            
-                foreach($arMatches[1] AS $key => $match){
-                    $arResult[$match] = $arValues[$key + 1];
+                foreach($matches AS $key => $match){
+                    $result[$match[1]] = $values[$key + 1];
                 }
             }
             
-            return $arResult;
+            return $result;
         }
 
 		return false;
 	}
+    
+    public function getMatch(array $routes = []){
+        $query = CAtom::$app->route->query;
+        
+        if(!$query){
+            return false;
+        }
+        
+        foreach($routes AS $mode => $params){
+            $params["varParams"] = isset($params["varParams"]) ? $params["varParams"] : [] ; 
+            
+            if(($varValues = $this->getMatchParams($query, $params["pattern"], $params["varParams"])) !== false){
+                $params["mode"]         = $mode;
+                $params["varValues"]    = $varValues;
+                
+                return $params;
+            }
+        }
+        
+        return false;
+	}
 }
-?>

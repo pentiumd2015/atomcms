@@ -1,6 +1,7 @@
 <?
+
 class CTemplate extends CObject{
-    protected $config    = [];
+    protected $config = [];
     public $templatePath;
     public $layoutPath;
     public $layoutFile;
@@ -10,16 +11,8 @@ class CTemplate extends CObject{
     
     static protected $filePath = "/config/template.php";
     
-    static protected $_arConfig = array();
-    
     public function __construct(array $config = []){
         $this->config = $config;
-    }
-    
-    public function setConfig(array $config = []){
-        $this->config = $config;
-        
-        return $this;
     }
     
     public function getConfig(){

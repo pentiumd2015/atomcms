@@ -71,7 +71,7 @@
         <?$this->showHead();?>
     </head>
 <body class="sidebar-wide">
-    <?CWidget::run("navigation", "index", "index");?>
+    <?CWidget::render("navigation", "index", "index");?>
     <div class="page-container">
         <!-- Sidebar -->
         <div class="sidebar">
@@ -108,13 +108,13 @@
                     </div>
                 </div>*/?>
                 <!-- /user dropdown -->
-                <?CWidget::run("menu", "sidebar", "sidebar");?>
+                <?CWidget::render("menu", "sidebar", "sidebar");?>
             </div>
         </div>
         <!-- /sidebar -->
         <div class="page-content-wrapper">
             <div class="page-content">
-                <?CWidget::run("breadcrumbs", "index", "index");?>
+                <?CWidget::render("breadcrumbs", "index", "index");?>
                 <?=$content;?>
             </div>
         </div>

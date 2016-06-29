@@ -1,82 +1,137 @@
+<?
+use Helpers\CUrl;
+use Helpers\CJson;
+use Helpers\CHtml;
+
+
+/*$p = CModuleAccessGroup::add([
+    "title"     => "Группы пользователей",
+    "module_id" => 1
+]);*/
+
+/*$p = CModuleAccess::add([
+    "module_access_group_id" => 1,
+    "title" => "Удаление",
+    "code"  => "delete"
+]);*/
+
+/*CModuleAccess::getAccessByModule("");
+
+$p = CModuleAccess::query()->fetchAll();
+*/
+
+//$p = CAtom::$app->user->can("user.view");
+//p($p);
+?>
 <div class="page-header">
     <div class="page-title">
         <h3>Пользователи <small>Список пользователей</small></h3>
     </div>
 </div>
 <?
-CWidget::render("admin.filter", "index", "index", [
-    "filterID"      => $filterID,
+CWidget::render("entity.data.filter", "index", "index", [
+    "filterId"      => $filterId,
     "requestName"   => "f",
-    "filterData"    => $_REQUEST["f"],
-    "fields"        => $arDisplayFilterFields,
-    "settingsURL"   => "/admin/ajax/?widget=entity.display&method=getFilterSettings&entity=" . CUser::getClass()
+    "entity"        => CUser::getClass(),
+    "filterData"    => $filterData ,
+    "fields"        => $displayFilterFields,
+    "settingsUrl"   => CUrl::to("/admin/ajax", [
+        "widget"    => "entity.display",
+        "method"    => "getFilterSettings",
+        "entity"    => CUser::getClass()
+    ])
 ]);
 
-$displayListSettings = CJSON::encode([
-    "url"       => "/admin/ajax/?widget=entity.display&method=getListSettings&entity=" . CUser::getClass(),
+$displayListSettings = CJson::encode([
+    "url"       => CUrl::to("/admin/ajax", [
+        "widget"    => "entity.display",
+        "method"    => "getListSettings",
+        "entity"    => CUser::getClass()
+    ]),
     "width"     => 700,
     "height"    => 400
 ]);
-?>
-<div class="row">
-    <div class="col-md-8">
-        <a class="btn btn-info" href="<?=$addURL;?>">
-            <i class="icon-plus"></i>
-            Добавить пользователя
-        </a>
-    </div>
-    <div class="col-md-4 text-right">
-        <a class="btn btn-primary btn-icon" data-placement="top" data-toggle="tooltip" href="#" onclick="(new CModal(<?=CHtml::chars($displayListSettings);?>)).show();return false;" title="Настройка отображения">
-            <i class="icon-cogs"></i>
-        </a>
-    </div>
-</div>
-<?
-CWidget::render("admin.list", "index", "index", [
-    "listID"        => $listID,
-    "listData"      => $arUsers,
-    "pagination"    => $obPagination,
-    "fields"        => $arDisplayListFields,
-    "options"  => [
-        "url" => $editURL
-    ],
-    "onRowOptions" => function($arRow, $arOptions){
-        $arOptions["url"] = str_replace("{ID}", $arRow[$arOptions["primaryKey"]], $arOptions["url"]);
 
-        return $arOptions;
+CWidget::render("entity.data.list", "index", "index", [
+    "listId"        => $listId,
+    "dataSource"    => $dataSource,
+    "fields"        => $displayListFields,
+    "headPanel"     => [
+        [
+            "attributes"    => ["class" => "col-md-8"],
+            "items"         => [
+                CHtml::a("<i class=\"icon-plus\"></i> Добавить пользователя", $addUrl, [
+                    "class" => "btn btn-info"
+                ])
+            ]
+        ],
+        [
+            "attributes"    => ["class" => "col-md-4 text-right"],
+            "items"         => [
+                CHtml::a("<i class=\"icon-cogs\"></i>", "#", [
+                    "class"             => "btn btn-primary btn-icon",
+                    "data-placement"    => "top",
+                    "data-toggle"       => "tooltip",
+                    "onclick"           => "(new CModal(" . $displayListSettings . ")).show();return false;",
+                    "title"             => "Настройка отображения"
+                ])
+            ]
+        ]
+    ],
+    "options"   => [
+        "url" => $editUrl
+    ],
+    "onRowOptions" => function($row, $options){
+        $options["url"] = str_replace("{ID}", $row[$options["primaryKey"]], $options["url"]);
+
+        return $options;
     },
-    "onCellOptions" => function($value, $arRow, $arOptions, $obField){
-        $arOptions["linkable"] = $obField->getName() == "login";
-        
-        return $arOptions;
+    "onCellOptions" => function($value, $row, $options, $fieldName){
+        $options["linkable"] = $fieldName == "login";
+
+        return $options;
     },
-    "controls" => function($arRow, $arOptions){
-        $pk = $arOptions["primaryKey"];
+    "controls" => function($row, $options){
+        $pk = $options["primaryKey"];
         
-        $arControls = [
-            CHtml::a("<i class=\"icon-pencil\"></i> Редактировать", str_replace("{ID}", $arRow[$pk], $arOptions["url"]))
+        $controls = [
+            CHtml::a("<i class=\"icon-remove\"></i> Активировать", "javascript: modalActiva(" . $row[$pk] . ");"),
+            CHtml::a("<i class=\"icon-remove\"></i> Деактивировать", "javascript: modalDelete(" . $row[$pk] . ");"),
+            CHtml::a("<i class=\"icon-pencil\"></i> Редактировать", str_replace("{ID}", $row[$pk], $options["url"]))
         ];
         
-        if($arRow[$pk] > 1){
-            $arControls[] = CHtml::a("<i class=\"icon-remove\"></i> Удалить", "javascript: modalDelete(" . $arRow[$pk] . ");");
+        if($row[$pk] > 1){
+            $controls[] = CHtml::a("<i class=\"icon-remove\"></i> Удалить", "javascript: modalDelete(" . $row[$pk] . ");");
         }
         
-        return $arControls;
-    }
+        return $controls;
+    },
+    "groupOperations" => [
+        [
+            "title" => "Активировать",
+            "value" => "activate"
+        ],
+        [
+            "title" => "Деактивировать",
+            "value" => "deactivate"
+        ],
+        [
+            "title" => "Удалить",
+            "value" => "delete"
+        ]
+    ]
 ]);
 ?>
 <script type="text/javascript">
 function onApplyFilterAfter(data){
-    $.adminList("<?=$listID;?>").refresh(data);
+    $.entityDataList("<?=$listId;?>").refresh(data);
 }
 
 function onApplyListAfter(){
     $('[data-toggle="tooltip"]').tooltip();
     
-    $.filterList("<?=$filterID;?>").hideSpinner();
+    $.entityDataFilter("<?=$filterId;?>").hideSpinner();
 }
-
-var currentModal;
 
 function modalDelete(id){
     var buttons = AdminTools.html.button("Удалить", {
@@ -89,13 +144,15 @@ function modalDelete(id){
         "data-mode" : "close"
     });
     
-    currentModal = new CModal({
+    var modal = new CModal({
         "title"     : "<i class=\"icon-remove\"></i> Подтверждение удаления",
         "body"      : "<p>Вы действительно хотите удалить пользователя?</p>",
         "buttons"   : buttons,
         "width"     : 340,
         "height"    : 70
     }).show();
+
+    $(document).data("modal.current", modal);
 }
 
 function applyDelete(id){
@@ -118,10 +175,14 @@ function applyDelete(id){
                             theme   : "success",
                             duration: 5000
                         });
+
+                        var modal = $(document).data("modal.current");
+
+                        if(modal){
+                            modal.close();
+                        }
                         
-                        currentModal.close();
-                        
-                        $.adminList("<?=$listID;?>").refresh();
+                        $.entityDataList("<?=$listId;?>").refresh();
                     }else{
                         $.note({
                             header  : "Ошибка удаления!", 

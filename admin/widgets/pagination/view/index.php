@@ -1,6 +1,8 @@
 <?
+use Helpers\CUrl;
+
 //p($this->getParams());
-$obPagination   = $this->getParam("obPagination");
+$pagination   = $this->getParam("pagination");
 $urlPageKey     = $this->getParam("urlPageKey");
 $path           = $this->getParam("urlPath");
 
@@ -13,14 +15,14 @@ unset($arTmpQuery[$urlPageKey]);
 $query          = CUrl::to(null, $arTmpQuery, true);
 $firstPageURL   = $path . (strlen($query) ? "?" . $query : ""); //if page=1 unset param page
 
-if($obPagination->numPage > 1){
+if($pagination->getNumPage() > 1){
     ?>
   		<ul class="pagination">
             <?
-                if($obPagination->page > 1){
+                if($pagination->page > 1){
                     ?>
                         <li class="prev">
-                            <a href="<?=((($obPagination->page - 1) > 1) ? str_replace("{PAGE_INDEX}", $obPagination->page - 1, $pageUrlPattern) : $firstPageURL);?>" data-page="<?=($obPagination->page - 1);?>">«</a>
+                            <a href="<?=((($pagination->page - 1) > 1) ? str_replace("{PAGE_INDEX}", $pagination->page - 1, $pageUrlPattern) : $firstPageURL);?>" data-page="<?=($pagination->page - 1);?>">«</a>
                         </li>
                     <?
                 }else{
@@ -31,16 +33,16 @@ if($obPagination->numPage > 1){
                     <?
                 }
                 
-                if($range > 0 && $obPagination->numPage > $range){
-                    if($obPagination->page < $range){
+                if($range > 0 && $pagination->getNumPage() > $range){
+                    if($pagination->page < $range){
                         for($i=1;$i<=$range;$i++){
                             ?>
-                                <li<?=($obPagination->page == $i ? ' class="active"' : '');?>>
+                                <li<?=($pagination->page == $i ? ' class="active"' : '');?>>
                                     <a href="<?=(($i > 1) ? str_replace("{PAGE_INDEX}", $i, $pageUrlPattern) : $firstPageURL);?>" data-page="<?=$i;?>"><?=$i;?></a>
                                 </li>
                             <?
                         }
-                    }else if($obPagination->page >= $range && $obPagination->page - 1 <= $obPagination->numPage - $range){ //если в середине
+                    }else if($pagination->page >= $range && $pagination->page - 1 <= $pagination->numPage - $range){ //если в середине
                         $n = floor($range / 2);
                         
                         ?>
@@ -56,7 +58,7 @@ if($obPagination->numPage > 1){
                         for($i=$n;$i>0;$i--){
                             ?>
                                 <li>
-                                    <a href="<?=((($obPagination->page - $i) > 1) ? str_replace("{PAGE_INDEX}", $obPagination->page - $i, $pageUrlPattern) : $firstPageURL);?>" data-page="<?=($obPagination->page - $i);?>"><?=$obPagination->page - $i;?></a>
+                                    <a href="<?=((($pagination->page - $i) > 1) ? str_replace("{PAGE_INDEX}", $pagination->page - $i, $pageUrlPattern) : $firstPageURL);?>" data-page="<?=($pagination->page - $i);?>"><?=$pagination->page - $i;?></a>
                                 </li>
                             <?
                         }
@@ -64,7 +66,7 @@ if($obPagination->numPage > 1){
                         //current
                         ?>
                             <li class="active">
-                                <a href="<?=str_replace("{PAGE_INDEX}", $obPagination->page, $pageUrlPattern);?>" data-page="<?=$obPagination->page;?>"><?=$obPagination->page;?></a>
+                                <a href="<?=str_replace("{PAGE_INDEX}", $pagination->page, $pageUrlPattern);?>" data-page="<?=$pagination->page;?>"><?=$pagination->page;?></a>
                             </li>
                         <?                                
                         
@@ -72,7 +74,7 @@ if($obPagination->numPage > 1){
                         for($i=1;$i<=$n;$i++){
                             ?>
                                 <li>
-                                    <a href="<?=str_replace("{PAGE_INDEX}", $obPagination->page + $i, $pageUrlPattern);?>" data-page="<?=($obPagination->page + $i);?>"><?=$obPagination->page + $i;?></a>
+                                    <a href="<?=str_replace("{PAGE_INDEX}", $pagination->page + $i, $pageUrlPattern);?>" data-page="<?=($pagination->page + $i);?>"><?=$pagination->page + $i;?></a>
                                 </li>
                             <?
                         }
@@ -82,7 +84,7 @@ if($obPagination->numPage > 1){
                                 <a>...</a>
                             </li>
                             <li>
-                                <a href="<?=str_replace("{PAGE_INDEX}", $obPagination->numPage, $pageUrlPattern);?>" data-page="<?=$obPagination->numPage;?>"><?=$obPagination->numPage;?></a>
+                                <a href="<?=str_replace("{PAGE_INDEX}", $pagination->numPage, $pageUrlPattern);?>" data-page="<?=$pagination->numPage;?>"><?=$pagination->numPage;?></a>
                             </li>
                         <?
                     }else{ //если в конце
@@ -94,28 +96,28 @@ if($obPagination->numPage > 1){
                                 <a>...</a>
                             </li>
                         <?
-                        for($i=$obPagination->numPage - $range + 1;$i<=$obPagination->numPage;$i++){
+                        for($i=$pagination->numPage - $range + 1;$i<=$pagination->numPage;$i++){
                             ?>
-                                <li<?=($obPagination->page == $i ? ' class="active"' : '');?>>
+                                <li<?=($pagination->page == $i ? ' class="active"' : '');?>>
                                     <a href="<?=str_replace("{PAGE_INDEX}", $i, $pageUrlPattern);?>" data-page="<?=$i;?>"><?=$i;?></a>
                                 </li>
                             <?
                         }
                     }
                 }else{
-                    for($i=1;$i<=$obPagination->numPage;$i++){
+                    for($i=1;$i<=$pagination->getNumPage();$i++){
                         ?>
-                            <li<?=($obPagination->page == $i ? ' class="active"' : '');?>>
+                            <li<?=($pagination->page == $i ? ' class="active"' : '');?>>
                                 <a href="<?=(($i > 1) ? str_replace("{PAGE_INDEX}", $i, $pageUrlPattern) : $firstPageURL);?>" data-page="<?=$i;?>"><?=$i;?></a>
                             </li>
                         <?
                     }
                 }
                 
-                if($obPagination->page < $obPagination->numPage){
+                if($pagination->page < $pagination->getNumPage()){
                     ?>
                         <li class="next">
-                            <a href="<?=str_replace("{PAGE_INDEX}", $obPagination->page + 1, $pageUrlPattern);?>" data-page="<?=($obPagination->page + 1);?>">»</a>
+                            <a href="<?=str_replace("{PAGE_INDEX}", $pagination->page + 1, $pageUrlPattern);?>" data-page="<?=($pagination->page + 1);?>">»</a>
                         </li>
                     <?
                 }else{

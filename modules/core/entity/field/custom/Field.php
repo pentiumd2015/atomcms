@@ -1,20 +1,26 @@
 <?
 namespace Entity\Field\Custom;
 
+use Entity\Field\Renderer\StringRenderer;
+
 abstract class Field extends \Entity\Field\BaseField{
     public function getRenderer(){
-        return new \Entity\Field\Renderer\StringRenderer($this);
+        return new StringRenderer($this);
     }
     
-    public function filter($value, \Entity\Builder $obBuilder){
+    public function onSelect(){
+        return false;
+    }
+    
+    public function filter($value){
         
     }
     
     public function condition($method, array $args = []){
-        $obBuilder = $this->getDispatcher()->getBuilder();
+        $query = $this->getDispatcher()->getQuery();
         
-        if(method_exists($obBuilder, $method)){
-            call_user_func_array([$obBuilder, $method], $args);
+        if(method_exists($query, $method)){
+            call_user_func_array([$query, $method], $args);
         }
     }
 }

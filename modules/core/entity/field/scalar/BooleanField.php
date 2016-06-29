@@ -1,11 +1,11 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \Entity\Result\BaseResult;
-use \Entity\Field\Renderer\BooleanRenderer;
+use Entity\Field\Renderer\BooleanRenderer;
+use DB\Manager\Error;
 
-class BooleanField extends Field{
-    protected $arInfo = [
+class BooleanField extends ListField{
+    protected $info = [
         "title" => "Да/Нет"
     ];
     
@@ -20,12 +20,13 @@ class BooleanField extends Field{
         ],
     ];
     
+    
     public function getRenderer(){
         return new BooleanRenderer($this);
     }
     
-    public function validate($value, BaseResult $obResult){
-        $validate = parent::validate($value, $obResult);
+    public function validate($value, $result){
+        $validate = parent::validate($value, $result);
         
         if($validate === true){
             if(strlen($value) && !isset($this->values[$value])){
@@ -36,4 +37,3 @@ class BooleanField extends Field{
         return $validate;
     }
 }
-?>

@@ -1,22 +1,32 @@
 <?
 namespace Entity\Field\Custom;
 
-use \CUser;
-use \CUserGroup;
-use \CArrayHelper;
-use \DB\Builder AS DbBuilder;
-use \Entity\Result\AddResult;
-use \Entity\Result\UpdateResult;
-use \Entity\Result\DeleteResult;
-use \Entity\Result\SelectResult;
-use \Entity\Field\Renderer\ListRenderer;
+use CUser;
+use Helpers\CArrayHelper;
+use Helpers\CArrayFilter;
+use DB\Query AS DbQuery;
+use Entity\Field\Renderer\ListRenderer;
 
 class UserGroupField extends Field{
-    protected $arInfo = array(
+    protected $info = array(
         "title" => "Группа пользователей"
     );
     
-    public $values = [];
+    public $values;
+    
+    public function __construct($name, $params = []){
+        parent::__construct($name, $params);
+        
+        $safeParams = [ //присваиваем только разрешенные параметры
+            "values"
+        ];
+        
+        foreach($safeParams AS $param){
+            if(isset($params[$param])){
+                $this->{$param} = $params[$param];
+            }
+        }
+    }
     
     public function getRenderer(){
         return new ListRenderer($this);
@@ -27,97 +37,91 @@ class UserGroupField extends Field{
     }
     
     public function condition($method, array $args = []){
-        $obBuilder  = $this->getDispatcher()->getBuilder();
-        $obEntity   = $obBuilder->getEntity();
+        $query  = $this->getDispatcher()->getQuery();
+        $entity   = $query->getManager();
         
         $gv = CUser::GROUP_VALUE_TABLE;
 
-        $obBuilder->leftJoin($gv, $gv . ".user_id", "{{table}}." . $obEntity->getPk())
-                  ->groupBy($obEntity->getPk());
+        $query->leftJoin($gv, $gv . ".user_id", "{{table}}." . $entity->getPk())
+                  ->groupBy($entity->getPk());
         
         $args["column"] = $gv . "." . $this->getColumnName();
         
-        if(method_exists($obBuilder, $method)){
-            call_user_func_array([$obBuilder, $method], $args);
+        if(method_exists($query, $method)){
+            call_user_func_array([$query, $method], $args);
         }
     }
     
     public function orderBy($by){
-        $obBuilder  = $this->getDispatcher()->getBuilder();
-        $obEntity   = $obBuilder->getEntity();
+        $query  = $this->getDispatcher()->getQuery();
+        $entity   = $query->getManager();
         
         $gv = CUser::GROUP_VALUE_TABLE;
         
-        $obBuilder->leftJoin($gv, $gv . ".user_id", "{{table}}." . $obEntity->getPk())
+        $query->leftJoin($gv, $gv . ".user_id", "{{table}}." . $entity->getPk())
                   ->orderBy($gv . "." . $this->getColumnName(), $by)
-                  ->groupBy($obEntity->getPk());
+                  ->groupBy($entity->getPk());
     }
     
     public function groupBy(){
-        $obBuilder  = $this->getDispatcher()->getBuilder();
-        $obEntity   = $obBuilder->getEntity();
+        $query  = $this->getDispatcher()->getQuery();
+        $entity   = $query->getManager();
         
         $gv = CUser::GROUP_VALUE_TABLE;
         
-        $obBuilder->leftJoin($gv, $gv . ".user_id", "{{table}}." . $obEntity->getPk())
+        $query->leftJoin($gv, $gv . ".user_id", "{{table}}." . $entity->getPk())
                   ->groupBy($gv . "." . $this->getColumnName());
     }
     
-    public function onFetch(SelectResult $obResult){ //fetch by multi items
-        $arItems = $obResult->getData();
+    public function onFetch($result){ //fetch by multi items
+        $items = $result->getData();
 
-        if(count($arItems)){
-            $obEntity   = $this->getDispatcher()->getBuilder()->getEntity();
-            $pk         = $obEntity->getPk();
+        if(count($items)){
+            $entity   = $this->getDispatcher()->getQuery()->getManager();
+            $pk         = $entity->getPk();
             
-            $arItems = CArrayHelper::index($arItems, $pk);
+            $items = CArrayHelper::index($items, $pk);
             
             $fieldAlias = $this->alias ? $this->alias : $this->name ;
 
-            $arUserGroupValues = (new DbBuilder)->from(CUser::GROUP_VALUE_TABLE)
-                                                ->whereIn("user_id", array_keys($arItems))
+            $userGroupValues = (new DbQuery)->from(CUser::GROUP_VALUE_TABLE)
+                                                ->whereIn("user_id", array_keys($items))
                                                 ->fetchAll();
 
-            foreach($arUserGroupValues AS $arUserGroupValue){
-                $arItems[$arUserGroupValue["user_id"]][$fieldAlias][$arUserGroupValue["id"]] = $arUserGroupValue["user_group_id"];
+            foreach($userGroupValues AS $userGroupValue){
+                $items[$userGroupValue["user_id"]][$fieldAlias][$userGroupValue["id"]] = $userGroupValue["user_group_id"];
             }
 
-            $obResult->setData(array_values($arItems));
+            $result->setData(array_values($items));
         }
     }
     
-    public function add(AddResult $obResult){
-        $arData = $obResult->getData();
-        $pk     = $this->getDispatcher()->getBuilder()->getEntity()->getPk();
-        $this->save($arData[$pk], $arData);
+    public function add($result){
+        $data = $result->getData();
+        $pk     = $this->getDispatcher()->getQuery()->getManager()->getPk();
+        $this->save($data[$pk], $data);
     }
     
-    public function update($id, UpdateResult $obResult){
-        $arData = $obResult->getData();
-        $this->save($id, $arData);
+    public function update($id, $result){
+        $data = $result->getData();
+        $this->save($id, $data);
     }
     
-    public function save($id, array $arData){
-        $obEntity   = $this->getDispatcher()->getBuilder()->getEntity();
-        $pk         = $obEntity->getPk();
+    public function save($id, array $data){
+        $fieldValues = [];
         
-        if(isset($arData[$this->name])){
-            $arFieldValues = $arData[$this->name];
+        if(!empty($data[$this->name])){
+            $fieldValues = $data[$this->name];
             
-            if(is_numeric($arFieldValues)){
-                $arFieldValues = [$arFieldValues];
+            if(is_numeric($fieldValues)){
+                $fieldValues = [$fieldValues];
             }
         }
-        
-        if(!is_array($arFieldValues)){
-            $arFieldValues = [];
-        }
-        
-        CUser::setGroups([$id], $arFieldValues);
+
+        CUser::setGroups([$id], array_filter($fieldValues));
     }
     
-    public function delete($id, DeleteResult $obResult){
+    public function delete($id, $result){
         CUser::setGroups([$id], []);
     }
 }
-?>

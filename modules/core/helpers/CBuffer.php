@@ -2,18 +2,17 @@
 namespace Helpers;
 
 class CBuffer{
-    static public function start($callback = NULL){
+    public static function start($callback = null){
         ob_start($callback);
     }
     
-    static public function end(){
+    public static function end(){
         return ob_get_clean();
     }
     
-    static public function clear(){
+    public static function clear(){
         while(ob_get_level()){
             ob_end_clean(); 
         }
     }
 }
-?>

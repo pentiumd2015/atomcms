@@ -1,28 +1,32 @@
 <?
 namespace DB;
 
-use \CEvent;
-use \PDOException;
+use CEvent;
+use PDOException;
+use CException;
 
 class Connection{
     protected $pdo;
     protected $result;
+    protected $dsn;
+    protected $username;
+    protected $password;
     
     public function getPDO(){
         return $this->pdo;
     }
     
     public function __construct(array $params){
-        $this->dsn      = $params["dsn"];
-        $this->username = $params["username"];
-        $this->password = $params["password"];
+        foreach($params AS $property => $value){
+            $this->{$property} = $value;
+        }
         
         CEvent::trigger("CORE.DB.CONNECT.BEFORE", [$this]);
         
         try{
             $this->pdo = new PDO($this->dsn, $this->username, $this->password, $params["attributes"]);
         }catch(PDOException $e){
-            throw new PDOException($e->getMessage(), $e->errorInfo, $e->getCode(), $e);
+            throw new CException($e->getMessage(), (int)$e->getCode(), $e);
         }
         
         CEvent::trigger("CORE.DB.CONNECT.AFTER", [$this]);
@@ -34,10 +38,8 @@ class Connection{
         if(($pos = strpos($this->dsn, ":")) !== false){
             return strtolower(substr($this->dsn, 0, $pos));
         }
-    }
-    
-    static public function getBuilder(){
-        return new Builder($this);
+
+        return null;
     }
     
     public function query($sql, $statements = []){
@@ -88,12 +90,16 @@ class Connection{
     }
     
     public function freeResult(){
-        $this->result = NULL;
+        $this->result = null;
+    }
+    
+    public function lastInsertId(){
+        return $this->pdo->lastInsertId();
     }
     
     public function quoteTable($table){
-        if(strpos(strtoupper($table), " AS ") !== false){ // with alias
-            list($tableName, , $tableAlias) = explode(" ", $tableName, 3);
+        if(stripos($table, " AS ") !== false){ // with alias
+            list($tableName, $as, $tableAlias) = explode(" ", $table, 3);
             $table = $this->_quoteTable($tableName) . " AS " . $this->quoteColumn($tableAlias);
         }else{
             $table = $this->_quoteTable($table);
@@ -119,7 +125,7 @@ class Connection{
         $column = $this->_quoteColumn($columnName);
         
         if($columnTable){
-            $column = $this->quoteTable($columnTable) . $column;
+            $column = $this->quoteTable($columnTable) . "." . $column;
         }
         
         if($columnAlias){
@@ -133,15 +139,23 @@ class Connection{
         $parts = (strpos($tableName, ".") === false) ? [$tableName] : explode(".", $tableName) ;
         
         foreach($parts AS $i => $part){
-            $parts[$i] = (strpos($part, "`") !== false ? $part : "`" . $part . "`");
+            $parts[$i] = (strpos($part, "`") !== false) ? $part : "`" . $part . "`";
         }
         
         return implode(".", $parts);
     }
 
     protected function _quoteColumn($columnName){
-        return strpos($columnName, "`") !== false || $columnName === "*" ? $columnName : "`" . $columnName . "`";
+        return (strpos($columnName, "`") !== false || $columnName === "*") ? $columnName : "`" . $columnName . "`";
+    }
+
+    public function getSchema(){
+        $dbType = $this->getDbType();
+
+        switch($dbType){
+            case "mysql":
+                return new Schema\Mysql($this);
+        }
     }
     
 }
-?>

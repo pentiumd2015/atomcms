@@ -1,53 +1,78 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \Helpers\CDateTime;
-use \DB\Expr;
-use \Entity\Result\SelectResult;
-use \Entity\Result\AddResult;
-use \Entity\Result\UpdateResult;
-use \Entity\Result\BaseResult;
-use \Entity\Field\Renderer\DateTimeRenderer;
+use Helpers\CDateTime;
+use DB\Expr;
+use Entity\Field\Renderer\DateTimeRenderer;
 
 class DateTimeField extends Field{
-    protected $arInfo = [
+    public $format = "d.m.Y H:i:s";
+
+    protected $info = [
         "title" => "Дата/Время"
     ];
+
+    public function __construct($name, $params = []){
+        parent::__construct($name, $params);
+
+        $safeParams = [ //присваиваем только разрешенные параметры
+            "format"
+        ];
+
+        foreach($safeParams AS $param){
+            if(isset($params[$param])){
+                $this->{$param} = $params[$param];
+            }
+        }
+    }
     
     public function getRenderer(){
         return new DateTimeRenderer($this);
     }
     
-    public function validate($value, BaseResult $obResult){
-        $validate = parent::validate($value, $obResult);
-        
+    public function validate($value, $result){
+        $validate = parent::validate($value, $result);
+
         if($validate === true){
-            if(strlen($value) && !($value instanceof Expr || (is_scalar($value) && CDateTime::validate($value, "Y-m-d H:i:s")))){            
-                $validate = new Error($this->name, "Неверный формат даты", Error::ERROR_INVALID);
+            if($value instanceof Expr){
+                return true;
+            }
+
+            if(is_scalar($value)){
+                $dateTime = CDateTime::createFromFormat($this->format, $value);
+
+                if(!$dateTime || $dateTime->format($this->format) != $value){
+                    $validate = new Error($this->name, "Неверный формат даты", Error::ERROR_INVALID);
+                }
             }
         }
-        
+
         return $validate;
     }
     
     public function onSelect(){
-        return new Expr("DATE_FORMAT({{table}}." . $this->name . ",'%d.%m.%Y %H:%i:%s')");
+        return new Expr("DATE_FORMAT(" . $this->getDispatcher()->getQuery()->prepareColumn($this->name) . ", '" . preg_replace("/(\w+)/", "%$1", $this->format) . "')");
     }
-    
-    public function onBeforeAdd($value, AddResult $obResult){
-        $this->onSave($value, $obResult);
+
+    public function onBeforeAdd($value, $result)
+    {
+        $this->onSave($value, $result);
     }
-    
-    public function onBeforeUpdate($value, UpdateResult $obResult){
-        $this->onSave($value, $obResult);
+
+    public function onBeforeUpdate($value, $result)
+    {
+        $this->onSave($value, $result);
     }
-    
-    protected function onSave($value, $obResult){
-        if($value){
-            $obResult->setDataValues([
-                $this->name => (new CDateTime($value))->format("Y-m-d H:i:s")
-            ]);
+
+    protected function onSave($value, $result){
+        if($value && !$value instanceof Expr){
+            $dateTime = CDateTime::createFromFormat($this->format, $value);
+
+            if($dateTime){
+                $result->setDataValues([
+                    $this->name => $dateTime->format("Y-m-d H:i:s")
+                ]);
+            }
         }
     }
 }
-?>

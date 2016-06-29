@@ -1,17 +1,17 @@
 <?
 namespace Entity\Field\Renderer;
 
-use \Helpers\CHtml;
-use \Helpers\CBuffer;
+use Helpers\CHtml;
+use Helpers\CBuffer;
 
 class StringRenderer extends BaseRenderer{
-    public function renderList($value, array $arListData = [], array $arOptions = []){
+    public function renderList($value, array $data = [], array $options = []){
         if($this->getField()->multi){
-            $arValues = is_array($value) ? $value : [$value] ;
+            $values = is_array($value) ? $value : [$value] ;
             
             $str = "";
             
-            foreach($arValues AS $value){
+            foreach($values AS $value){
                 $str.= "<span class=\"label label-primary\">" . $value . "</span> ";
             }
         }else{
@@ -22,19 +22,18 @@ class StringRenderer extends BaseRenderer{
             $str = "-";
         }
         
-        return $arOptions["linkable"] ? CHtml::a($str, $arOptions["url"]) : $str ;
+        return $options["linkable"] ? CHtml::a($str, $options["url"]) : $str ;
     }
     
-    public function renderFilter($value, array $arData = [], array $arOptions = []){
-        $obField        = $this->getField();
-        $arParams       = $this->getParams();
+    public function renderFilter($value, array $arData = [], array $options = []){
+        $field = $this->getField();
         
         CBuffer::start();
             ?>
                 <div class="form-group">
-                    <label class="col-sm-3 control-label"><?=$obField->title;?>:</label>
+                    <label class="col-sm-3 control-label"><?=$field->title;?>:</label>
                     <div class="col-sm-9">
-                        <?=CHtml::text($arParams["requestName"] . "[" . $obField->getName() . "]", $value, [
+                        <?=CHtml::text($options["requestName"] . "[" . $field->getName() . "]", $value, [
                             "class" => "form-control input-sm"
                         ]);?>
                     </div>
@@ -43,19 +42,18 @@ class StringRenderer extends BaseRenderer{
         return CBuffer::end();
     }
     
-    public function renderDetail($value, array $arData = [], array $arOptions = []){
-        $obField        = $this->getField();
-        $fieldName      = $obField->getName();
-        $arParams       = $this->getParams();
+    public function renderDetail($value, array $arData = [], array $options = []){
+        $field      = $this->getField();
+        $fieldName  = $field->getName();
         
         CBuffer::start();
-            if($obField->disabled){
+            if($field->disabled){
                 if(!$value){//если поле отключено и нет значения, то ничего отображать не надо
                     return "";
                 }
                 ?>
                     <div class="form-group">
-                        <label class="col-sm-2 control-label"><?=$obField->title . ":" . ($obField->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
+                        <label class="col-sm-2 control-label"><?=$field->title . ":" . ($field->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
                         <div class="col-sm-6 control-content">
                             <div class="control-disabled"><b><?=(is_array($value) ? reset($value) : $value);?></b></div>
                         </div>
@@ -64,30 +62,30 @@ class StringRenderer extends BaseRenderer{
                 return CBuffer::end();
             }
             
-            if($obField->multi){
+            if($field->multi){
                 $containerID = uniqid($fieldName . "_");
                     ?>
                         <div class="form-group">
-                            <label class="col-sm-2 control-label"><?=$obField->title . ":" . ($obField->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
+                            <label class="col-sm-2 control-label"><?=$field->title . ":" . ($field->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
                             <div class="col-sm-6 control-content">
                                 <div class="entity_field_container_<?=$containerID;?>">
                                     <?
-                                        $arValues = is_array($value) ? $value : [$value];
+                                        $values = is_array($value) ? $value : [$value];
                                     
                                         $i = 0;
                                         
-                                        foreach($arValues AS $value){
+                                        foreach($values AS $value){
                                             ?>
                                                 <div class="row">
                                                     <div class="col-sm-9">
                                                         <?
-                                                            echo CHtml::text($arParams["requestName"] . "[" . $fieldName . "][]", $value, [
+                                                            echo CHtml::text($options["requestName"] . "[" . $fieldName . "][]", $value, [
                                                                 "class" => "form-control"
                                                             ]);
                                                             
-                                                            if($i == 0 && $obField->description){
+                                                            if($i == 0 && $field->description){
                                                                 ?>
-                                                                    <span class="help-block"><?=$obField->description;?></span>
+                                                                    <span class="help-block"><?=$field->description;?></span>
                                                                 <?
                                                             }
                                                         ?>
@@ -125,7 +123,7 @@ class StringRenderer extends BaseRenderer{
                         <script type="template/html" id="entity_field_value_template_<?=$containerID;?>">
                             <div class="row">
                                 <div class="col-sm-9">
-                                    <?=CHtml::text($arParams["requestName"] . "[" . $fieldName . "][]", "", [
+                                    <?=CHtml::text($options["requestName"] . "[" . $fieldName . "][]", "", [
                                         "class" => "form-control",
                                     ]);?>
                                 </div>
@@ -153,18 +151,18 @@ class StringRenderer extends BaseRenderer{
                 $value = is_array($value) ? reset($value) : $value ;
                 ?>
                     <div class="form-group">
-                        <label class="col-sm-2 control-label"><?=$obField->title . ":" . ($obField->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
+                        <label class="col-sm-2 control-label"><?=$field->title . ":" . ($field->required ? "<span class=\"mandatory\">*</span>" : "");?></label>
                         <div class="col-sm-6 control-content">
                             <div class="row">
                                 <div class="col-sm-9">
                                     <?
-                                        echo CHtml::text($arParams["requestName"] . "[" . $fieldName . "]", $value, [
+                                        echo CHtml::text($options["requestName"] . "[" . $fieldName . "]", $value, [
                                             "class" => "form-control"
                                         ]);
                                     
-                                        if($obField->description){
+                                        if($field->description){
                                             ?>
-                                                <span class="help-block"><?=$obField->description;?></span>
+                                                <span class="help-block"><?=$field->description;?></span>
                                             <?
                                         }
                                     ?>

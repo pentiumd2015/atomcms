@@ -1,29 +1,26 @@
 <?
-use \Entity\Field\Scalar\IntegerField;
-use \Entity\Field\Scalar\StringField;
-use \Entity\Field\Scalar\DateTimeField;
+use Entity\Field\Scalar\IntegerField;
+use Entity\Field\Scalar\StringField;
+use Entity\Field\Scalar\DateTimeField;
 
-use \Entity\Field\Custom\UserGroupAccessField;
+use Entity\Field\Error;
 
-use \Entity\Field\Error;
+use Entity\Field\Validate\Unique AS ValidateUnique;
+use Entity\Field\Validate\RegExp as ValidateRegExp;
 
-use \Entity\Field\Validate\Unique AS ValidateUnique;
-use \Entity\Field\Validate\RegExp as ValidateRegExp;
+use DB\Expr;
 
-use \DB\Expr;
-
-class CUserGroup extends \Entity\Entity{
-    static protected $_table    = "user_group";
-    static protected $_pk       = "id";
+class CUserGroup extends Entity\Manager{
+    protected static $tableName = "user_group";
     
-    static protected $arInfo = array(
+    protected static $info = [
         "title" => "Группа пользователей"
-    );
+    ];
     
-    const ALIAS_ADMIN           = "ADMIN",
-          ALIAS_UNAUTHORISED    = "UNAUTHORISED";
+    const CODE_ADMIN           = "ADMIN",
+          CODE_UNAUTHORISED    = "UNAUTHORISED";
     
-    static protected $arEvents = array(
+    protected static $events = array(
         "ADD"       => "USER.GROUP.ADD",
         "UPDATE"    => "USER.GROUP.UPDATE",
         "DELETE"    => "USER.GROUP.DELETE",
@@ -31,79 +28,72 @@ class CUserGroup extends \Entity\Entity{
     
     public function getFields(){
         return array(
-            new IntegerField("id", array(
+            new IntegerField("id", [
                 "title"     => "ID",
-                "visible"   => true,
+                "primary"   => true,
                 "disabled"  => true
-            ), $this),
-            new StringField("title", array(
+            ]),
+            new StringField("title", [
                 "title"     => "Название",
                 "required"  => true,
-                "visible"   => true,
-            ), $this),
-            new StringField("alias", array(
-                "title"     => "Алиас",
+            ]),
+            new StringField("code", [
+                "title"     => "Код",
                 "required"  => true,
-                "visible"   => true,
                 "validate"  => function(){
-                    return array(
+                    return [
+                        [$this, "validateCode"],
                         new ValidateRegExp("/^[a-zA-Z0-9-_]+$/si"),
-                        function($value, $pk, $arData, $obField){
-                            if(!$obField->getEntity()->isSystemGroup($arData["alias"])){
-                                return true;
-                            }else{
-                                return new Error($obField->getFieldName(), "Вы не можете редактировать системные группы", "system_group");
-                            }
-                        },
                         new ValidateUnique(),
-                    );
+                    ];
                 },
-            ), $this),
-            new DateTimeField("date_add", array(
+            ]),
+            new DateTimeField("date_add", [
                 "title"     => "Дата добавления",
-                "visible"   => true, //L - List, E - Edit, A - Add, F - Filter
                 "disabled"  => true
-            ), $this),
-            new DateTimeField("date_update", array(
-                "title"     => "Дата изменения",
-                "visible"   => true,
+            ]),
+            new DateTimeField("date_update", [
+                "title"     => "Дата обновления",
                 "disabled"  => true
-            ), $this)
+            ]),
         );
     }
-    
-    static public function isSystemGroup($alias){
-        return in_array($alias, array(
-            self::ALIAS_UNAUTHORISED, 
-            self::ALIAS_ADMIN
-        ));
+
+    public function validateCode($value, $result, $field){
+        $fieldName = $field->getName();
+
+        if(!$result->isNewRecord()){
+            $value = $result->getItemValue($fieldName);
+        }
+
+        if(!$this->isSystemGroup($value)){
+            return true;
+        }else{
+            return new Error($fieldName, "Вы не можете редактировать системные группы", "system_group");
+        }
     }
     
-    public function getCustomFields(){
-        return array(
-            new UserGroupAccessField("access", array(
-                "title"     => "Уровень доступа",
-                "visible"   => true,
-                "multi"     => true
-            ), $this)
-        );
+    public static function isSystemGroup($alias){
+        return in_array($alias, [
+            self::CODE_UNAUTHORISED,
+            self::CODE_ADMIN
+        ]);
     }
-    
-    public function onBeforeAdd($obResult){
-        $obResult->setDataValues([
+
+    public function onBeforeAdd($result){
+        $result->setDataValues([
             "date_add"      => new Expr("NOW()"),
             "date_update"   => new Expr("NOW()")
         ]);
-        
+
         return true;
     }
-    
-    public function onBeforeUpdate($obResult, $id){
-        $obResult->setDataValues([
+
+    public function onBeforeUpdate($result){
+        $result->setDataValues([
             "date_update" => new Expr("NOW()")
         ]);
 
         return true;
     }
 }
-?>

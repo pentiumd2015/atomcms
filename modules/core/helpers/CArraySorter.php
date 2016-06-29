@@ -49,25 +49,27 @@ class CArraySorter{
     
     $arr = CSorter::multiSort($ar, array("id" => SORT_ASC, "p" => SORT_ASC,));
     */        
-    static public function multiSort(array $arData, $arColumns = array()){
+    static public function multiSort(array $data, array $columns){
         $i = 0;
+
+        $args = [];
         
-        foreach($arColumns AS $column => $direction){
-            foreach($arData AS $key => $arItem){
-                $arArgs[$i][$key] = $arItem[$column];
+        foreach($columns AS $column => $direction){
+            foreach($data AS $key => $item){
+                $args[$i][$key] = $item[$column];
             }
             
             $i++;
-            
-            $arArgs[$i] = $direction;
+
+            $args[$i] = $direction;
             
             $i++;
         }
         
-        $arArgs[] = &$arData;
+        $args[] = &$data;
         
-        call_user_func_array("array_multisort", $arArgs);
+        call_user_func_array("array_multisort", $args);
         
-        return end($arArgs);
+        return end($args);
     }
 }

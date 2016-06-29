@@ -1,167 +1,172 @@
 <?
 namespace Entity;
 
-use \Helpers\CJSON;
-use \CArrayHelper;
-use \DB\Builder AS DbBuilder;
+use Helpers\CJson;
+use DB\Manager AS DbManager;
 
-class Display{
-    public function __construct(Entity $obEntity){
-        $this->obEntity = $obEntity;
+
+class Display extends DbManager{
+    protected static $tableName = "new_entity_display";
+    protected $manager;
+
+    public function __construct(Manager $manager = null){
+        if($manager !== null){
+            $this->manager = $manager;
+        }
+    }
+
+    public function setManager(Manager $manager){
+        $this->manager = $manager;
+
+        return $this;
+    }
+
+    public function getManager(){
+        return $this->manager;
     }
     
-    public function getEntity(){
-        return $this->obEntity;
-    }
-    
-    public function builder(){
-        return (new DbBuilder)->from("new_entity_display");
-    }
-    
-    public function getAllFields(){
-        return $this->getEntity()->builder()->getFields();
-    }
-    
-    public function getAllVisibleFields(){
-        $arFields = [];
+    public function getFieldNames(){
+        $fields = [];
         
-        foreach($this->getAllFields() AS $fieldName => $obField){
-            if($obField->visible){
-                $arFields[$fieldName] = $obField;
+        foreach($this->manager->query()->getFields() AS $fieldName => $field){
+            if($field->visible){
+                $fields[$fieldName] = $field;
             }
         }
         
-        return $arFields;
+        return $fields;
     }
     
-    public function getEntityDisplayData($userID, $type){
-        $arTmpEntityDisplay = $this->builder()
-                                   ->select("data", "user_id")
-                                   ->where("entity_id", $this->getEntity()->getTableName())
-                                   ->whereIn("user_id", [0, $userID])
-                                   ->orderby("user_id", "DESC")
-                                   ->limit(2)
-                                   ->fetchAll();
+    public function getEntityDisplayData($userId, $type){
+        $tmpEntityDisplay = $this->query()
+                                 ->select("data", "user_id")
+                                 ->where("entity_id", $this->manager->getTableName())
+                                 ->whereIn("user_id", [0, $userId])
+                                 ->orderBy("user_id", "DESC")
+                                 ->limit(2)
+                                 ->fetchAll();
 
-        foreach($arTmpEntityDisplay AS $arTmpEntityDisplayItem){
-            $arDisplayData = CJSON::decode($arTmpEntityDisplayItem["data"], true);
+        foreach($tmpEntityDisplay AS $tmpEntityDisplayItem){
+            $displayData = CJson::decode($tmpEntityDisplayItem["data"], true);
             
-            if(is_array($arDisplayData[$type]) && count($arDisplayData[$type])){
-                return $arDisplayData[$type];
+            if(is_array($displayData[$type]) && count($displayData[$type])){
+                return $displayData[$type];
             }
         }
         
         return false;
     }
     
-    public function getDisplayListFields($userID = 0){
-        $arFields       = $this->getAllVisibleFields();
-        $arDisplayFields= $arFields;
-        
-        if($arEntityDisplay = $this->getEntityDisplayData($userID, "list")){
-            $arDisplayFields = [];
-            
-            foreach($arEntityDisplay AS $arDisplayField){
-                if(($fieldName = $arDisplayField["field"]) && isset($arFields[$fieldName])){
-                    $arDisplayFields[$fieldName] = $arFields[$fieldName];
+    public function getDisplayListFields($userId = 0){
+        $fields = $this->manager->query()->getFields();
+
+        $displayFields = [];
+
+        if($entityDisplay = $this->getEntityDisplayData($userId, "list")){
+            foreach($entityDisplay AS $displayField){
+                if(($fieldName = $displayField["field"]) && isset($fields[$fieldName]) && $fields[$fieldName]->visible){
+                    $displayFields[] = $fieldName;
                 }
             }
         }else{
-            $arDisplayFields = $arFields;
+            foreach($this->getFieldNames() AS $fieldName){
+                $displayFields[] = $fieldName;
+            }
         }
-        
-        return $arDisplayFields;
+
+        return $displayFields;
     }
     
-    public function getDisplayFilterFields($userID = 0){
-        $arFields       = $this->getAllVisibleFields();
-        $arDisplayFields= $arFields;
-       
-        if($arEntityDisplay = $this->getEntityDisplayData($userID, "filter")){
-            $arDisplayFields = [];
-            
-            foreach($arEntityDisplay AS $arDisplayField){
-                if(($fieldName = $arDisplayField["field"]) && isset($arFields[$fieldName])){
-                    $arDisplayFields[$fieldName] = $arFields[$fieldName];
+    public function getDisplayFilterFields($userId = 0){
+        $fields = $this->manager->query()->getFields();
+
+        $displayFields = [];
+
+        if($entityDisplay = $this->getEntityDisplayData($userId, "filter")){
+            foreach($entityDisplay AS $displayField){
+                if(($fieldName = $displayField["field"]) && isset($fields[$fieldName]) && $fields[$fieldName]->visible && $fields[$fieldName]->filterable){
+                    $displayFields[] = $fieldName;
                 }
             }
         }else{
-            $arDisplayFields = $arFields;
+            foreach($this->getFieldNames() AS $fieldName){
+                $displayFields[] = $fieldName;
+            }
         }
         
-        return $arDisplayFields;
+        return $displayFields;
     }
     
-    public function getDisplayDetailFields($userID = 0){
-        $arFields           = $this->getAllVisibleFields();
-        $arDisplayFields    = [];
-        
-        if($arEntityDisplay = $this->getEntityDisplayData($userID, "detail")){
-            foreach($arEntityDisplay AS $index => $arTab){
-                $arTabFields = [];
+    public function getDisplayDetailFields($userId = 0){
+        $fields = $this->manager->query()->getFields();
+
+        $displayFields  = [];
+
+        if($entityDisplay = $this->getEntityDisplayData($userId, "detail")){
+            foreach($entityDisplay AS $index => $tab){
+                $tabFields = [];
                 
-                if(is_array($arTab["fields"])){
-                    foreach($arTab["fields"] AS $arDisplayField){
-                        $fieldName = $arDisplayField["field"];
-                        
-                        if(($fieldName = $arDisplayField["field"]) && isset($arFields[$fieldName])){
-                            $arTabFields[$fieldName] = $arFields[$fieldName];
+                if(is_array($tab["fields"])){
+                    foreach($tab["fields"] AS $displayField){
+                        if(($fieldName = $displayField["field"]) && isset($fields[$fieldName]) && $fields[$fieldName]->visible){
+                            $tabFields[] = $fieldName;
                         }
                     }
                 }
                 
-                $arDisplayFields[] = [
+                $displayFields[] = [
                     "name"  => "tab_" . ($index + 1),
-                    "title" => $arTab["title"],
-                    "fields"=> $arTabFields
+                    "title" => $tab["title"],
+                    "fields"=> $tabFields
                 ];
             }
         }else{
-            $arDisplayFields[] = [
+            $tabFields = [];
+
+            foreach($this->getFieldNames() AS $fieldName){
+                $tabFields[] = $fieldName;
+            }
+
+            $displayFields[] = [
                 "name"      => "tab_main",
                 "title"     => "Основное",
-                "fields"    => $arFields
+                "fields"    => $tabFields
             ];
         }
 
-        return $arDisplayFields;
+        return $displayFields;
     }
     
-    public function setDisplayFields(array $arData = [], $type, $userID = 0){
-        $obEntity = $this->getEntity();
-        
-        $arTmpEntityDisplay = $this->builder()
+    public function setDisplayFields(array $data = [], $type, $userId = 0){
+        $tmpEntityDisplay = $this->query()
                                    ->select("data")
-                                   ->where("entity_id", $obEntity->getTableName())
-                                   ->where("user_id", $userID)
+                                   ->where("entity_id", $this->manager->getTableName())
+                                   ->where("user_id", $userId)
                                    ->limit(1)
                                    ->fetch();
         
-        if($arTmpEntityDisplay){
-            $arEntityDisplay = CJSON::decode($arTmpEntityDisplay["data"], true);
+        if($tmpEntityDisplay){
+            $entityDisplay = CJson::decode($tmpEntityDisplay["data"], true);
             
-            if(count($arData)){
-                $arEntityDisplay[$type] = $arData;
+            if(count($data)){
+                $entityDisplay[$type] = $data;
             }else{
-                unset($arEntityDisplay[$type]);
+                unset($entityDisplay[$type]);
             }
             
-            return $this->builder()
-                        ->where("entity_id", $obEntity->getTableName())
-                        ->where("user_id", $userID)
+            return $this->query()
+                        ->where("entity_id", $this->manager->getTableName())
+                        ->where("user_id", $userId)
                         ->update([
-                           "data" => CJSON::encode($arEntityDisplay)
+                           "data" => CJson::encode($entityDisplay)
                         ]);
         }else{
-            return $this->builder()
+            return $this->query()
                         ->insert([
-                            "entity_id" => $obEntity->getTableName(),
-                            "user_id"   => $userID,
-                            "data"      => CJSON::encode([$type => $arData])
+                            "entity_id" => $this->manager->getTableName(),
+                            "user_id"   => $userId,
+                            "data"      => CJson::encode([$type => $data])
                         ]);
         }
-        
-        return $this;
     }
 }
-?>

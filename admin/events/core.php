@@ -1,4 +1,6 @@
 <?
+use Helpers\CBuffer;
+
 function p(){
     foreach(func_get_args() AS $arg){
         echo "<pre>" . print_r($arg, true) . "</pre>";
@@ -31,8 +33,8 @@ CEvent::on('CORE.DB.CONNECT.AFTER', function($connection){
     
     date_default_timezone_set($timezone);
     
-    $connection->query("SET lc_time_names=?", ["ru_RU"]);
-    $connection->query("SET time_zone=?", [$timezone]);
+   // $connection->query("SET lc_time_names=?", ["ru_RU"]);
+  //  $connection->query("SET time_zone=?", [$timezone]);
 });
 
 CEvent::on(array(
@@ -72,11 +74,11 @@ CEvent::on(array(
         if($arErrors && ($arErrors["type"] & $errorType)){
             CBuffer::clear();
             
-            $arConfig = $obApp->getConfig();
+          //  $arConfig = $obApp->getConfig();
             
-            if($arConfig["errors"]["displayErrors"]){
+          //  if($arConfig["errors"]["displayErrors"]){
                 echo '<pre>';
-                echo 'Error: ' . CException::$arErrorTypes[$arErrors['type']] . '<br/>';
+                echo 'Error: <br/>';
                 print_r($arErrors);
                 
                 $arTraces = debug_backtrace();
@@ -90,7 +92,7 @@ CEvent::on(array(
                 }
                 print_r($arTraces);
                 echo '</pre>';
-            }
+          //  }
         }
     },
     'CORE.EXCEPTION' => function($exception){

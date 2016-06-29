@@ -1,30 +1,46 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \Entity\Field\BaseField;
+use Entity\Field\BaseField;
 
 abstract class Field extends BaseField{
-    public function condition($method, array $arArgs = []){
+    public $primary = false;
+    
+    public function __construct($name, $params = []){
+        parent::__construct($name, $params);
+        
+        $safeParams = [ //присваиваем только разрешенные параметры
+            "primary"
+        ];
+        
+        foreach($safeParams AS $param){
+            if(isset($params[$param])){
+                $this->{$param} = $params[$param];
+            }
+        }
+    }
+    
+    public function condition($method, array $args = []){
         $this->getDispatcher()
-             ->getBuilder()
-             ->operation($method, $arArgs);
+             ->getQuery()
+             ->internal($method, $args);
     }
     
     public function orderBy($by){
         $this->getDispatcher()
-             ->getBuilder()
-             ->operation(__FUNCTION__, [$this->name, $by]);
+             ->getQuery()
+             ->internal(__FUNCTION__, [$this->name, $by]);
     }
     
     public function groupBy(){
         $this->getDispatcher()
-             ->getBuilder()
-             ->operation(__FUNCTION__, [$this->name]);
+             ->getQuery()
+             ->internal(__FUNCTION__, [$this->name]);
     }
     
     public function filter($value){
         $this->getDispatcher()
-             ->getBuilder()
+             ->getQuery()
              ->where($this->name, $value);
     }
 }

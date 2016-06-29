@@ -1,53 +1,50 @@
- <?
-use \Entity\Display;
+<?
+use Entity\Display;
+use Helpers\CJson;
+use Helpers\CHtml;
+use Helpers\CHttpResponse;
 
-$method = $_REQUEST["method"];
-$userID = $this->app("user")->getID();
+$request    = CAtom::$app->request;
+$method     = $request->request("method");
+$userId     = CAtom::$app->user->getId();
+$entity     = $request->request("entity");
 
 switch($method){
     case "setDisplaySettings":
-        $arResponse = ["result" => 1];
-        $entity     = $_REQUEST["entity"];
-        $type       = $_REQUEST["type"];
-        
+        $response   = ["result" => 1];
+        $type       = $request->request("type");
+
         if($entity && class_exists($entity)){
-            $obEntity   = new $entity;
-            $obDisplay  = new Display($obEntity);
+            $entity   = new $entity;
+            $display = new Display($entity);
+            $display->setDisplayFields($request->request("data", []), $type, $userId);
             
-            $arData = $_REQUEST["data"];
-            
-            if(!is_array($arData)){
-                $arData = [];
-            }
-            
-            $obDisplay->setDisplayFields($arData, $type, $userID);
-            
-            $arResponse["hasErrors"] = 0;
+            $response["hasErrors"] = 0;
         }else{
-            $arResponse["hasErrors"] = 1;
-            $arResponse["errors"] = "Сущность " . $obEntity->getClass() . " не найдена";
+            $response["hasErrors"] = 1;
+            $response["errors"] = "Сущность " . $entity->getClass() . " не найдена";
         }
-        
+
         CHttpResponse::setType(CHttpResponse::JSON);
-        echo CJSON::encode($arResponse);
+        echo CJson::encode($response);
         break;
     case "getListSettings":
-        $arResponse = ["result" => 1];
-        $entity     = $_REQUEST["entity"];
+        $response = ["result" => 1];
         
         if($entity && class_exists($entity)){
-            $obEntity   = new $entity;
-            $obDisplay  = new Display($obEntity);
-            
-            $this->setData([
-                "obDisplay"         => $obDisplay,
-                "arEntityDisplay"   => $obDisplay->getDisplayListFields($userID),
-                "obEntity"          => $obEntity
+            $entity     = new $entity;
+            $display    = new Display($entity);
+
+            $this->setViewData([
+                "entity"        => $entity,
+                "fields"        => $entity->query()->getFields(),
+                "display"       => $display,
+                "displayFields" => $display->getDisplayListFields($userId)
             ]);
             
-            $arResponse["content"] = [
+            $response["content"] = [
                 "title"     => "Настройка отображения списка",
-                "body"      => $this->getViewContent("list"),
+                "body"      => $this->includeView("list", true),
                 "buttons"   => [
                     CHtml::button("<i class=\"icon-checkmark\"></i> Применить", [
                         "class" => "btn btn-primary",
@@ -60,27 +57,27 @@ switch($method){
                 ]
             ];
         }
-        
+
         CHttpResponse::setType(CHttpResponse::JSON);
-        echo CJSON::encode($arResponse);
+        echo CJson::encode($response);
         break;
     case "getFilterSettings":
-        $arResponse = ["result" => 1];
-        $entity     = $_REQUEST["entity"];
+        $response = ["result" => 1];
         
         if($entity && class_exists($entity)){
-            $obEntity   = new $entity;
-            $obDisplay  = new Display($obEntity);
-            
-            $this->setData([
-                "obDisplay"         => $obDisplay,
-                "arEntityDisplay"   => $obDisplay->getDisplayFilterFields($userID),
-                "obEntity"          => $obEntity
+            $entity     = new $entity;
+            $display    = new Display($entity);
+
+            $this->setViewData([
+                "entity"            => $entity,
+                "fields"            => $entity->query()->getFields(),
+                "display"           => $display,
+                "displayFields"     => $display->getDisplayFilterFields($userId),
             ]);
             
-            $arResponse["content"] = [
+            $response["content"] = [
                 "title"     => "Настройка отображения фильтра",
-                "body"      => $this->getViewContent("filter"),
+                "body"      => $this->includeView("filter", true),
                 "buttons"   => [
                     CHtml::button("<i class=\"icon-checkmark\"></i> Применить", [
                         "class" => "btn btn-primary",
@@ -93,27 +90,27 @@ switch($method){
                 ]
             ];
         }
-        
+
         CHttpResponse::setType(CHttpResponse::JSON);
-        echo CJSON::encode($arResponse);
+        echo CJson::encode($response);
         break;
     case "getDetailSettings":
-        $arResponse  = ["result" => 1];
-        $entity = $_REQUEST["entity"];
+        $response = ["result" => 1];
         
         if($entity && class_exists($entity)){
-            $obEntity   = new $entity;
-            $obDisplay  = new Display($obEntity);
+            $entity     = new $entity;
+            $display    = new Display($entity);
             
-            $this->setData([
-                "obDisplay"         => $obDisplay,
-                "arEntityDisplay"   => $obDisplay->getDisplayDetailFields($userID),
-                "obEntity"          => $obEntity
+            $this->setViewData([
+                "entity"        => $entity,
+                "fields"        => $entity->query()->getFields(),
+                "display"       => $display,
+                "displayFields" => $display->getDisplayDetailFields($userId)
             ]);
             
-            $arResponse["content"] = [
+            $response["content"] = [
                 "title"     => "Настройка отображения подробного просмотра",
-                "body"      => $this->getViewContent("detail"),
+                "body"      => $this->includeView("detail", true),
                 "buttons"   => [
                     CHtml::button("<i class=\"icon-checkmark\"></i> Применить", [
                         "class" => "btn btn-primary",
@@ -126,11 +123,8 @@ switch($method){
                 ]
             ];
         }
-        
+
         CHttpResponse::setType(CHttpResponse::JSON);
-        echo CJSON::encode($arResponse);
+        echo CJson::encode($response);
         break;
 }
-
-exit;
-?>

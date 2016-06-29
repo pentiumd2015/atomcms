@@ -8,7 +8,7 @@ class CBreadcrumbs{
         if(!isset($breadcrumbs["items"])){
             $breadcrumbs["items"] = [];
         }
-        
+
         $breadcrumbs["items"] = array_merge($breadcrumbs["items"], $data);
         
         $view->setDynamicData("BREADCRUMBS", $breadcrumbs);

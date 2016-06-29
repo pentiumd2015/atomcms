@@ -1,70 +1,108 @@
+<?
+use Helpers\CUrl;
+use Helpers\CJson;
+use Helpers\CHtml;
+
+?>
 <div class="page-header">
     <div class="page-title">
         <h3>Группы пользователей <small>Список групп</small></h3>
     </div>
 </div>
-
 <?
-CWidget::render("admin.filter", "index", "index", array(
-    "filterID"      => $filterID,
-    "data"          => $_REQUEST["f"],
-    "fields"        => $arDisplayFilterFields,
-    "settingsURL"   => "/admin/ajax/?widget=entity.display&method=getFilterSettings&entity=" . CUserGroup::getClass()
-));
+CWidget::render("entity.data.filter", "index", "index", [
+    "filterId"      => $filterId,
+    "requestName"   => "f",
+    "entity"        => CUserGroup::getClass(),
+    "filterData"    => $filterData ,
+    "fields"        => $displayFilterFields,
+    "settingsUrl"   => CUrl::to("/admin/ajax", [
+        "widget"    => "entity.display",
+        "method"    => "getFilterSettings",
+        "entity"    => CUserGroup::getClass()
+    ])
+]);
 
-$displayListSettings = CJSON::encode(array(
-    "url"       => "/admin/ajax/?widget=entity.display&method=getListSettings&entity=" . CUserGroup::getClass(),
+$displayListSettings = CJson::encode([
+    "url"       => CUrl::to("/admin/ajax", [
+        "widget"    => "entity.display",
+        "method"    => "getListSettings",
+        "entity"    => CUserGroup::getClass()
+    ]),
     "width"     => 700,
     "height"    => 400
-));
-?>
-<div class="row">
-    <div class="col-md-8">
-        <a class="btn btn-info" href="<?=$addURL;?>">
-            <i class="icon-plus"></i>
-            Добавить группу
-        </a>
-    </div>
-    <div class="col-md-4 text-right">
-        <a class="btn btn-primary btn-icon" data-placement="top" data-toggle="tooltip" href="javascript:(new CModal(<?=CHtml::chars($displayListSettings);?>)).show();" title="Настройка отображения">
-            <i class="icon-cogs"></i>
-        </a>
-    </div>
-</div>
-<?
-CWidget::render("admin.list", "index", "index", array(
-    "listID"        => $listID,
-    "data"          => $arUserGroups,
-    "pagination"    => $obPagination,
-    "fields"        => $arDisplayListFields,
-    "extraData"     => array(
-        "url" => $editURL
-    ),
-    "controls" => function($arRow, $primaryKey, $arParams){
-        $arControls = array(
-            CHtml::a("<i class=\"icon-pencil\"></i> Редактировать", str_replace("{ID}", $arRow[$primaryKey], $arParams["extraData"]["url"]))
-        );
+]);
 
-        if(isset($arRow["alias"]) && !CUserGroup::isSystemGroup($arRow["alias"])){
-            $arControls[] = CHtml::a("<i class=\"icon-remove\"></i> Удалить", "javascript: modalDelete(" . $arRow[$primaryKey] . ");");
+CWidget::render("entity.data.list", "index", "index", [
+    "listId"        => $listId,
+    "dataSource"    => $dataSource,
+    "columns"       => $displayListFields,
+    "headPanel"     => [
+        [
+            "attributes"    => ["class" => "col-md-8"],
+            "items"       => [
+                CHtml::a("<i class=\"icon-plus\"></i> Добавить группу", $addUrl, [
+                    "class" => "btn btn-info"
+                ])
+            ]
+        ],
+        [
+            "attributes"    => ["class" => "col-md-4 text-right"],
+            "items"       => [
+                CHtml::a("<i class=\"icon-cogs\"></i>", "#", [
+                    "class"             => "btn btn-primary btn-icon",
+                    "data-placement"    => "top",
+                    "data-toggle"       => "tooltip",
+                    "onclick"           => "(new CModal(" . $displayListSettings . ")).show();return false;",
+                    "title"             => "Настройка отображения"
+                ])
+            ]
+        ]
+    ],
+    "options"   => [
+        "url" => $editUrl
+    ],
+    "onRowOptions" => function($row, $options){
+        $options["url"] = str_replace("{ID}", $row[$options["primaryKey"]], $options["url"]);
+
+        return $options;
+    },
+    "onCellOptions" => function($value, $row, $options, $field){
+        $options["linkable"] = $field->getName() == "title";
+        
+        return $options;
+    },
+    "controls" => function($row, $options){
+        $pk = $options["primaryKey"];
+        
+        $controls = [
+            CHtml::a("<i class=\"icon-pencil\"></i> Редактировать", str_replace("{ID}", $row[$pk], $options["url"]))
+        ];
+        
+        if(!CUserGroup::isSystemGroup($row["alias"])){
+            $controls[] = CHtml::a("<i class=\"icon-remove\"></i> Удалить", "javascript: modalDelete(" . $row[$pk] . ");");
         }
         
-        return $arControls;
-    }
-));
+        return $controls;
+    },
+    "groupOperations" => [
+        [
+            "title" => "Удалить",
+            "value" => "delete"
+        ]
+    ]
+]);
 ?>
 <script type="text/javascript">
 function onApplyFilterAfter(data){
-    $.adminList("<?=$listID;?>").refresh(data);
+    $.entityDataList("<?=$listId;?>").refresh(data);
 }
 
 function onApplyListAfter(){
     $('[data-toggle="tooltip"]').tooltip();
     
-    $.filterList("<?=$filterID;?>").hideSpinner();
+    $.entityDataFilter("<?=$filterId;?>").hideSpinner();
 }
-
-var currentModal;
 
 function modalDelete(id){
     var buttons = AdminTools.html.button("Удалить", {
@@ -77,13 +115,15 @@ function modalDelete(id){
         "data-mode" : "close"
     });
     
-    currentModal = new CModal({
+    var modal = new CModal({
         "title"     : "<i class=\"icon-remove\"></i> Подтверждение удаления",
         "body"      : "<p>Вы действительно хотите удалить группу?</p>",
         "buttons"   : buttons,
         "width"     : 340,
         "height"    : 70
     }).show();
+
+    $(document).data("modal.current", modal);
 }
 
 function applyDelete(id){
@@ -102,18 +142,22 @@ function applyDelete(id){
                     if(!r.hasErrors){
                         $.note({
                             header  : "Успешно!", 
-                            title   : "Группа успешно удалена", 
+                            title   : "Группа успешно удалена",
                             theme   : "success",
                             duration: 5000
                         });
+
+                        var modal = $(document).data("modal.current");
+
+                        if(modal){
+                            modal.close();
+                        }
                         
-                        currentModal.close();
-                        
-                        $.adminList("<?=$listID;?>").refresh();
+                        $.entityDataList("<?=$listId;?>").refresh();
                     }else{
                         $.note({
                             header  : "Ошибка удаления!", 
-                            title: "Группа не была удалена", 
+                            title: "Группа не была удалена",
                             theme: "error",
                             duration: 5000
                         });
@@ -124,7 +168,7 @@ function applyDelete(id){
     }else{
         $.note({
             header  : "Ошибка удаления!", 
-            title: "Группа не была удалена", 
+            title: "Группа не была удалена",
             theme: "error",
             duration: 5000
         });

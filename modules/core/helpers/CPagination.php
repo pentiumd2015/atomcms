@@ -1,18 +1,21 @@
 <?
 namespace Helpers;
 
+use DB\Connection;
+use CAtom;
+
 class CPagination{
-    public $perPage;
-    public $page;
-    public $numPage;
+    public $perPage     = 10;
+    public $page        = 1;
+    protected $numPage;
     public $count;
     
-    public function __construct($page = NULL, $perPage = NULL){
-        if($page){
+    public function __construct($page = null, $perPage = null){
+        if($page !== null){
             $this->setPage($page);
         }
         
-        if($perPage){
+        if($perPage !== null){
             $this->setPerPage($perPage);
         }
     }
@@ -22,6 +25,10 @@ class CPagination{
         
         return $this;
     }
+
+    public function getNumPage(){
+        return $this->numPage;
+    }
     
     public function setPerPage($perPage = 10){
         $this->perPage = (int)$perPage;
@@ -30,6 +37,8 @@ class CPagination{
     }
     
     public function correctPage(){
+        $this->numPage = ceil($this->count / $this->perPage);
+
         if($this->page > $this->numPage){
             $this->page = $this->numPage;
         }else if($this->page < 1){
@@ -37,50 +46,44 @@ class CPagination{
         }
     }
     
-    public function initFromSQL($sql, $arStatements = array(), $DBconnection = NULL){
-        if(!$DBconnection){
-            $DBconnection = CDB::getInstance();
+    public function initFromSql($sql, $statements = [], Connection $connection = null){
+        if($connection === null){
+            $connection = CAtom::$app->db;
         }
         
         if($this->perPage > 0){
-            $countSQL       = preg_replace('/^(\(*SELECT\s+.*?\s+FROM)/si', 'SELECT COUNT(*) C FROM', $sql, 1);
-            $this->count    = $DBconnection->query($countSQL, $arStatements)->fetch()->C;
-            $this->numPage  = ceil($this->count / $this->perPage);
-            
+            $countSQL       = preg_replace("/^(\(*SELECT\s+.*?\s+FROM)/si", "SELECT COUNT(*) FROM", $sql, 1);
+            $this->count    = $connection->query($countSQL, $statements)->fetchColumn();
             $this->correctPage();
             
-            $sql.= ' LIMIT ' . $this->perPage . ' OFFSET ' . (($this->page - 1) * $this->perPage);
+            $sql.= " LIMIT " . $this->perPage . " OFFSET " . (($this->page - 1) * $this->perPage);
         }
 
-        return $DBconnection->query($sql, $arStatements);
+        return $connection->query($sql, $statements);
     }
     
-    public function initFromArray(array $arData){
-        if(count($arData) && $this->perPage > 0){
-            $this->count    = count($arData);
-            $this->numPage  = ceil($this->count / $this->perPage);
-            
+    public function initFromArray(array $data = []){
+        if(count($data) && $this->perPage > 0){
+            $this->count = count($data);
             $this->correctPage();
-            
-            $arData = array_chunk($arData, $this->perPage, true);
-            $arData = $arData[$this->page - 1];
+
+            $data = array_chunk($data, $this->perPage, true);
+            $data = $data[$this->page - 1];
         }
         
-        return $arData;
+        return $data;
     }
     
     public function getData(){
         if($this->perPage > 0 && $this->count > $this->perPage){
-            $obResult = new stdClass;
-            $obResult->numPage  = $this->numPage; //кол-во страниц
-            $obResult->count    = $this->count;   //кол-во записей
-            $obResult->perPage  = $this->perPage; //кол-во записей на страницу
-            $obResult->page     = $this->page;    //текущая страница
-            
-            return $obResult;
+            return [
+                "numPage"  => $this->numPage,
+                "count"    => $this->count,
+                "perPage"  => $this->perPage,
+                "page"     => $this->page
+            ];
         }else{
-            return false;
+            return null;
         }
     }
 }
-?>

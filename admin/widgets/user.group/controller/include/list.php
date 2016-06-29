@@ -1,47 +1,73 @@
 <?
-use \Entity\Display;
+use Entity\Display;
+use Data\QueryDataSource;
 
-$userID = $this->app("user")->getID();
+$addUrl     = $this->getParam("addUrl");
+$editUrl    = $this->getParam("editUrl");
+$listUrl    = $this->getParam("listUrl");
 
-/*Apply Request Group*/
-if($_REQUEST["group"] && $_REQUEST["checkbox_item"]){
-    $arGroupItems = $_REQUEST["checkbox_item"];
+$request = CAtom::$app->request;
 
-    if(is_array($arGroupItems)){
-        switch($_REQUEST["group"]){
-            case "delete":
-                CUserGroup::deleteAll($arGroupItems);
-                break;
-        }
+$groupOperation = $request->get("group");
+$groupItems     = $request->get("checkbox_item", []);
+
+/*Apply group operations*/
+if($groupOperation && count($groupItems)){
+    switch($groupOperation){
+        case "delete":
+            $userGroup = CUserGroup::getAllById($groupItems);
+
+            $groupItems = [];
+
+            foreach(CUserGroup::getAllById($groupItems) AS $userGroup){
+                if(!CUserGroup::isSystemGroup($userGroup["alias"])){
+                    $groupItems[] = $userGroup["id"];
+                }
+            }
+
+            if(count($groupItems)){
+                CUserGroup::deleteAll($groupItems);
+            }
+
+            break;
     }
 }
-/*Apply Request Group*/
+/*Apply group operations*/
 
-$obUserGroup = new CUserGroup;
+$userId     = CAtom::$app->user->getId(); //current user
+$userGroup  = new CUserGroup;
 
-$arDisplayListFields = Display::getDisplayListFields($obUserGroup, $userID);
+$filterData = $request->get("f", []);
 
-$obPagination = new CPagination($_REQUEST["page"], ($_REQUEST["perPage"] ? $_REQUEST["perPage"] : 20));
+$query = $userGroup->search([
+    "filter"=> $filterData,
+    "sort"  => [$request->get("sort", $userGroup->getPk()) => $request->get("by", "DESC")]
+]);
 
-$arUserGroups = $obUserGroup->search(array(
-    "filter"        => $_REQUEST["f"],
-    "sort"          => array($_REQUEST["sort"] => $_REQUEST["by"]),
-    "pagination"    => $obPagination,
-    "select"        => array_merge(array("*"), array_keys($arDisplayListFields)) //нам нужно получить все базовые поля. нужен алиас для распознавания системных групп
-));
+$display = new Display;
+$display->setManager($userGroup);
 
-$entityName = CUserGroup::getTableName();
+$dataSource = new QueryDataSource([
+    "query"         => $query,
+    "pagination"    => [
+        "page"      => (int)$request->get("page", 1),
+        "perPage"   => (int)$request->get("perPage", 20)
+    ]
+]);
 
-$this->setData(array(
-    "listID"                => $entityName . "_list",
-    "filterID"              => $entityName . "_filter",
-    "arUserGroups"          => $arUserGroups,
-    "addURL"                => $addURL,
-    "editURL"               => $editURL,
-    "obPagination"          => $obPagination,
-    "arDisplayListFields"   => $arDisplayListFields,
-    "arDisplayFilterFields" => Display::getDisplayFilterFields($obUserGroup, $userID),
-));
+CBreadcrumbs::add([
+    $listUrl => "Список групп"
+]);
+
+$this->setViewData([
+    "dataSource"            => $dataSource,
+    "filterData"            => $filterData,
+    "listId"                => $userGroup->getEntityName() . "_list",
+    "filterId"              => $userGroup->getEntityName() . "_filter",
+    "addUrl"                => $addUrl,
+    "editUrl"               => $editUrl,
+    "displayListFields"     => $display->getDisplayListFields($userId),
+    "displayFilterFields"   => $display->getDisplayFilterFields($userId),
+]);
 
 $this->includeView("list");
-?>

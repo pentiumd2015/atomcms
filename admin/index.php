@@ -1,10 +1,4 @@
 <?
-error_reporting(E_ALL);
-ini_set('error_reporting', E_ALL);
-//ini_set("log_errors", true);
-ini_set("display_errors", true);
-//ini_set("error_log", $_SERVER["DOCUMENT_ROOT"] . "/log.log");
-
 //добавить больше проверок сервера
 if(version_compare(PHP_VERSION, "5.4", "<")){
 	exit("PHP needs 5.4 or higher");
@@ -26,6 +20,6 @@ CAutoload::getInstance()->addDirMap([
     "/modules/core"
 ]);
 
-$config = include(ROOT_PATH . "/config/config.php");
+$config = include(__DIR__ . "/config/config.php");
 
 (new Admin\CApplication($config))->run();

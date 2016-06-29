@@ -1,10 +1,10 @@
 <?
 namespace Entity\Field\Scalar;
 
-use \Entity\Field\Renderer\StringRenderer;
+use Entity\Field\Renderer\StringRenderer;
 
 class StringField extends Field{
-    protected $arInfo = [
+    protected $info = [
         "title" => "Строка"
     ];
     
@@ -15,13 +15,8 @@ class StringField extends Field{
     public function filter($value){
         if(is_scalar($value) && strlen($value)){
             $this->getDispatcher()
-                 ->getBuilder()
+                 ->getQuery()
                  ->where($this->name, "LIKE", "%" . $value . "%");
         }
     }
-    /*
-    public function onSelect(){
-        return new \DB\Expr("DATE_FORMAT(" . $this->fieldName . ", '%d.%m.%Y')");
-    }*/
 }
-?>

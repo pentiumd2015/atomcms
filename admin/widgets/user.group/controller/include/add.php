@@ -1,56 +1,58 @@
 <?
-use \Entity\Display;
+use Entity\Display;
+use Helpers\CHttpResponse;
+use Helpers\CJson;
 
-$userID = $this->app("user")->getID();
+$addUrl     = $this->getParam("addUrl");
+$editUrl    = $this->getParam("editUrl");
+$listUrl    = $this->getParam("listUrl");
 
-$formID = CUserGroup::getTableName();
+$userId     = CAtom::$app->user->getId();
+$userGroup  = new CUserGroup;
+$formId     = $userGroup->getEntityName();
 
-if($_REQUEST[$formID]){
-    $obResult = CUserGroup::add($_REQUEST[$formID]);
+if($_REQUEST[$formId]){
+    $result = $userGroup->add($_REQUEST[$formId]);
 
-    if(CHttpRequest::isAjax()){
-        $arResponse = array("result" => 1);
+    if(CAtom::$app->request->isAjax()){
+        $response = ["result" => 1];
         
-        if($obResult->isSuccess()){
-            $id = $obResult->getID();
-            $arResponse["hasErrors"]    = 0;
-            $arResponse["id"]           = $id;
-            $arResponse["redirectURL"]  = str_replace("{ID}", $id, $editURL);
+        if($result->isSuccess()){
+            $id = $result->getId();
+            $response["hasErrors"]    = 0;
+            $response["id"]           = $id;
+            $response["redirectUrl"]  = str_replace("{ID}", $id, $editUrl);
         }else{
-            $arResponse["hasErrors"]    = 1;
-            $arResponse["errors"]       = array();
+            $response["hasErrors"]    = 1;
+            $response["errors"]       = [];
             
-            foreach($obResult->getErrors() AS $obFieldError){
-                $arResponse["errors"][$obFieldError->getFieldName()] = array(
-                    "code"      => $obFieldError->getCode(),
-                    "message"   => $obFieldError->getMessage()
-                );
+            foreach($result->getErrors() AS $fieldError){
+                $response["errors"][$fieldError->getFieldName()] = [
+                    "code"      => $fieldError->getCode(),
+                    "message"   => $fieldError->getMessage()
+                ];
             }
         }
-        
+
         CHttpResponse::setType(CHttpResponse::JSON);
-        echo CJSON::encode($arResponse);
+        echo CJson::encode($response);
         exit;
     }
 }
 
-$arUserGroup = isset($_REQUEST[$formID]) ? $_REQUEST[$formID] : array();
+CBreadcrumbs::add([
+    $listUrl    => "Список групп",
+    $addUrl     => "Новая группа"
+]);
 
-CBreadcrumbs::add(array(
-    $listURL    => "Список групп",
-    $addURL     => "Новая группа"
-));
+$display = new Display;
+$display->setManager($userGroup);
 
-$obUserGroup = new CUserGroup;
+$this->setViewData([
+    "mode"          => "add",
+    "displayFields" => $display->getDisplayDetailFields($userId),
+    "formId"        => $formId,
+    "formData"      => isset($_REQUEST[$formId]) ? $_REQUEST[$formId] : []
+]);
 
-$this->setData(array(
-    "arDisplayDetailFields" => Display::getDisplayDetailFields($obUserGroup, $userID),
-    "formID"                => $formID,
-    "arErrors"              => $arErrors,
-    "listURL"               => $listURL,
-    "addURL"                => $addURL,
-    "arUserGroup"           => $arUserGroup
-));
-
-$this->includeView("add");
-?>
+$this->includeView("form");

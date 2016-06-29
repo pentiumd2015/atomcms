@@ -6,16 +6,16 @@ class CHttpRequest{
         return isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && $_SERVER["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest";
     }
 
-    public function request($name = null, $defaultValue = null){
-        return $this->getQueryParams($_REQUEST, $name, $defaultValue);
+    public function request($name = null, $nullValue = null){
+        return $this->getQueryParams($_REQUEST, $name, $nullValue);
     }
     
-    public function get($name = null, $defaultValue = null){
-        return $this->getQueryParams($_GET, $name, $defaultValue);
+    public function get($name = null, $nullValue = null){
+        return $this->getQueryParams($_GET, $name, $nullValue);
     }
     
-    public function post($name = null, $defaultValue = null){
-        return $this->getQueryParams($_POST, $name, $defaultValue);
+    public function post($name = null, $nullValue = null){
+        return $this->getQueryParams($_POST, $name, $nullValue);
     }
     
     public function isPost(){
@@ -30,11 +30,11 @@ class CHttpRequest{
         return ($this->isGet() || $this->isPost());
     }
     
-    protected function getQueryParams(array $array = [], $name = null, $defaultValue = null){
-        if($name == null){
+    protected function getQueryParams(array $array = [], $name = null, $nullValue = null){
+        if($name === null){
             return $array;
         }else{
-            return isset($array[$name]) ? $array[$name] : $defaultValue;
+            return isset($array[$name]) ? $array[$name] : $nullValue ;
         }
     }
 }

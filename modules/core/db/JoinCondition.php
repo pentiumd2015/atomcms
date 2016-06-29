@@ -5,8 +5,8 @@ class JoinCondition{
 	public $type;
 	public $table;
     public $alias;
-    public $arWheres    = [];
-    public $arOns       = [];
+    public $wheres  = [];
+    public $ons     = [];
     
 	public function __construct($table = NULL, $type = "INNER"){
 		$this->type = $type;
@@ -32,17 +32,13 @@ class JoinCondition{
         return $this;
     }
     
-    public function getOns(){
-        return $this->arOns;
-    }
-    
 	public function on($relation, $operator, $reference = NULL, $logic = "AND"){
         if(func_num_args() == 2 || $reference == NULL){
             $reference  = $operator;
             $operator   = "=";
     	}
         
-        $this->arOns[] = [
+        $this->ons[] = [
             "relation"  => $relation, 
             "operator"  => $operator, 
             "reference" => $reference, 
@@ -62,7 +58,7 @@ class JoinCondition{
             $operator   = "=";
     	}
         
-        $this->arWheres[] = [
+        $this->wheres[] = [
             "column"    => $column, 
             "operator"  => $operator, 
             "value"     => $value, 

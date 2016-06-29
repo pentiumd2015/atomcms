@@ -1,10 +1,13 @@
 <?
 $widget = $this;
 
-CBreadcrumbs::show(function($items) use($widget){
-    return $this->view->render(ROOT_PATH . $widget->viewFile, $items);
+CBreadcrumbs::show(function($data) use($widget){
+    if(!is_array($data["items"])){
+        $data["items"] = [];
+    }
+    
+    $data["items"] = array_merge(["/" => "Главная"], $data["items"]);
+    $widget->setViewData($data);
+    
+    return $widget->includeView($widget->viewName, true);
 });
-
-CBreadcrumbs::add([
-    "/" => "Главная",
-]);
