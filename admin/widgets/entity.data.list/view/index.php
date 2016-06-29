@@ -19,10 +19,10 @@ use Helpers\CHtml;
                                     ?>
                                 </div>
                             <?
-                        }
+                        } 
                     ?>
                 </div>
-                <br/> 
+                <br/>
             <?
         }
     ?>
