@@ -22,7 +22,7 @@ use Helpers\CHtml;
                         }
                     ?>
                 </div>
-                <br/>
+                <br/> 
             <?
         }
     ?>
